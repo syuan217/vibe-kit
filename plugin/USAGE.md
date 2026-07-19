@@ -4,7 +4,7 @@
 
 ## 一、这个插件是什么
 
-vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调"的能力封装为 6 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
+vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调"的能力封装为 7 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
 
 它与两个仓库协作:
 
@@ -33,7 +33,7 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 2. **hub 仓库本地 clone**:vibe-init 和 cross-app-spec 需要;首次使用时 AI 会询问 hub 路径,告诉它即可
 3. 应用仓库是 git 仓库
 
-## 三、六个 Skill 详解
+## 三、七个 Skill 详解
 
 ### 1. vibe-init — 仓库接入
 
@@ -94,6 +94,16 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 | 你可以说 | "同步一下文档" / "文档好像过期了" / "补文档" |
 | 做什么 | 找到上次文档更新点,扫描其后的代码变更,逐项修正 AGENTS.md/wiki/architecture/api;只改文档不改代码 |
 
+### 7. registry-sync — 校准服务依赖关系
+
+| | |
+|---|---|
+| 用途 | 从代码反推本服务的真实依赖(HTTP/gRPC/MQ/跨库),对比 hub registry 声明,修正失真 |
+| 什么时候用 | 大需求收尾后、或每月对全部服务跑一轮;怀疑 registry 不准时 |
+| 你可以说 | "校准一下依赖" / "检查这个服务的依赖关系对不对" |
+| 需要提供 | hub 路径 |
+| 做什么 | 扫描调用代码 → 报告缺失/多余/方式不符三类差异(存疑项列证据不静默写入)→ 确认后更新 registry、跑校验、重生成依赖图 |
+
 ## 四、典型场景(人视角)
 
 **接入一个存量服务**:打开仓库 → "接入 vibe-kit"(vibe-init)→ "反向生成文档"(vibe-init-docs,含 wiki)→ 按提示去 hub 登记 registry → 提交。
@@ -103,6 +113,8 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 **做一个跨应用需求**:"这个需求涉及 A 和 B 服务"(cross-app-spec 在 hub 立总 spec、定契约)→ owner 评审契约 → 各仓库走单应用流程 → 各自 finalize-feature → 按总 spec 顺序上线 → 回填总 spec 状态。
 
 **发现文档不对**:"同步文档"(sync-docs)。不用追究是谁漏的,一条命令修复。
+
+**维护服务关系(registry)**:平时不用管——vibe-init 登记、finalize-feature 随需求更新、hub CI 自动校验和重生成依赖图;每月或大需求后对各服务说"校准依赖"(registry-sync)防止声明与代码脱节。详细机制见 hub `registry/README.md`。
 
 ## 五、AI Agent 使用规则
 

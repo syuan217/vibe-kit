@@ -1,6 +1,6 @@
 # vibe-kit plugin
 
-把 vibe-kit 工作流能力封装为 skills,AI 按场景自动触发,也可直接说 skill 名调用。
+把 vibe-kit 工作流能力封装为 7 个 skills,AI 按场景自动触发,也可直接说 skill 名调用。
 
 **完整使用说明(人 + AI agent)见 [USAGE.md](USAGE.md)。**
 
@@ -14,6 +14,7 @@
 | cross-app-spec | "这个需求涉及多个服务" | 需求开始 |
 | finalize-feature | "需求收尾 / 沉淀文档" | 需求结束 |
 | sync-docs | "同步文档 / 文档过期了" | 日常修复 |
+| registry-sync | "校准依赖 / 检查服务依赖关系" | 定期校准 |
 
 ## 说明
 

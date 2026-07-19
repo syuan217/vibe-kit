@@ -19,6 +19,7 @@
 WORKFLOW.md                  # 工作流方案(先读这个)
 VERSION                      # kit 版本
 registry/services.yaml       # 服务注册表:全系统服务清单、依赖关系、文档指针
+registry/README.md           # registry 维护规范(更新时机、校验、校准)
 specs/                       # 跨应用需求总 spec(_template/ 为模板)
 docs/                        # 公共文档(总体架构、团队约定、文档写作规范 doc-style.md)
 templates/
@@ -29,9 +30,11 @@ prompts/
   rebuild-wiki.md            # 从代码生成 wiki 定位层(code-map + 模块页)
   finalize-feature.md        # 需求完成后把 spec 结论沉淀进 docs/(收尾)
   sync-docs.md               # 增量补齐文档(日常失真修复)
+  registry-sync.md           # 从代码反推服务依赖,校准 registry
 scripts/
   vibe-init.sh               # 在应用仓库初始化本工作流
   registry-graph.py          # 从 registry 生成 mermaid 服务依赖图
+  registry-check.py          # registry 结构与引用校验(CI/本地)
 plugin/                      # Claude 插件源码(6 个 skills,打包为 vibe-kit.plugin 分发)
 ```
 

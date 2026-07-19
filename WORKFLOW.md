@@ -50,6 +50,7 @@
 **机制:hub 总 spec + 服务注册表 + 契约优先。**
 
 - `registry/services.yaml` 是全系统唯一权威的服务清单:每个服务的仓库地址、负责人、上下游依赖、契约文档指针。AI 工具处理跨应用需求时先读它,即可知道"改 A 会影响谁"。
+- **registry 维护机制**(详见 `registry/README.md`):只声明 `depends_on`,消费方由脚本反推;三个声明式更新时机(vibe-init 接入登记、finalize-feature 依赖变化时更新、cross-app-spec 立项时校对)+ CI 自动校验(`scripts/registry-check.py`:引用完整性、字段合法性,合入后自动重生成依赖图)+ 定期用 `registry-sync` 从代码反推真实依赖校准声明。
 - 跨应用需求流程:先在 hub `specs/NNN-需求名/spec.md` 立**总 spec**(需求概述、影响面、契约变更、各服务职责拆分、上线顺序),再到各应用仓库 `/speckit.specify` 建**子 spec** 并回链总 spec。总 spec 的"影响面"表格反向链接所有子 spec,双向可追溯。
 - **契约先于实现**:跨服务接口(API/消息/事件)在总 spec 的契约章节先定稿,提供方与消费方并行开发;上线顺序在总 spec 中明确(通常先发提供方)。
 
