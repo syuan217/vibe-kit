@@ -17,5 +17,13 @@ description: Creates a cross-application master spec in the vibe-kit hub repo fo
    - **契约变更**(先于实现定稿,标注兼容/破坏性)
    - 各服务职责拆分与验收标准
    - 上线顺序(通常先提供方后消费方)
-4. 提醒流程:契约章节须经涉及服务的 owner 评审(状态改 `contracts-approved`)后,各应用仓库才开始 `/speckit.specify`;子 spec 首行引用本 spec 链接,并回填影响面表。
-5. 若本需求会改变服务依赖关系,提醒同步 `registry/services.yaml` 并重新生成依赖图:`python3 scripts/registry-graph.py`。
+4. 提醒流程:契约章节须经涉及服务的 owner 评审(状态改 `contracts-approved`)后,各应用仓库才开始实现;子 spec 首行引用本 spec 链接,并回填影响面表。**此评审是人工闸口,不要替用户跳过。**
+5. **生成各服务启动指令**(拷贝即用):为每个涉及服务输出一条预填好的命令,格式:
+
+   ```
+   # 在 <service-id> 仓库执行:
+   /speckit.specify 实现跨应用需求「NNN-需求名」中本服务的部分。总 spec:<hub spec 链接或路径>。本服务职责:<职责拆分章节内容摘要>。契约约束:<该服务相关的契约变更摘要>。完成后回填总 spec 影响面表。
+   ```
+
+   用户在对应仓库粘贴即进入标准 spec-kit 流程(specify → clarify → plan → tasks → implement)。
+6. 若本需求会改变服务依赖关系,提醒同步 `registry/services.yaml` 并重新生成依赖图:`python3 scripts/registry-graph.py`。
