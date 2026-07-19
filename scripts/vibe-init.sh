@@ -50,6 +50,8 @@ fi
 
 # 4. 记录 kit 版本与 hub 位置(.vibe-hub 为本地个人配置,不入库)
 cp "$KIT_DIR/VERSION" .vibe-kit-version
+mkdir -p docs
+git rev-parse HEAD > docs/.sync-commit 2>/dev/null || true  # 文档一致性基线
 HUB_ABS="$(cd "$HUB_DIR" && pwd)"
 echo "$HUB_ABS" > .vibe-hub
 grep -qx '\.vibe-hub' .gitignore 2>/dev/null || echo '.vibe-hub' >> .gitignore

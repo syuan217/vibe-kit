@@ -15,4 +15,4 @@
    - 只写从代码可证实的内容;推测处标注 `TODO(待确认)` 并在最后汇总列出,由维护者确认
    - 发现的问题(如未使用的模块、疑似废弃接口)单独列出,不写入文档正文
 4. 依赖推测清单:把从注解与构建坐标推测出的上游依赖整理成**待确认清单**(每项附证据:文件 + 注解/坐标),供用户逐项确认后登记 hub registry/services.yaml;推测不经确认不得直接写入 registry。
-5. 输出摘要与 TODO 清单,经用户确认后提交,commit message:`docs: bootstrap docs from codebase audit`。
+5. 输出摘要与 TODO 清单,经用户确认后将当前 HEAD 写入基线(`git rev-parse HEAD > docs/.sync-commit`)并一起提交,commit message:`docs: bootstrap docs from codebase audit`。

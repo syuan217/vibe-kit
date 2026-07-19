@@ -20,6 +20,7 @@
 | docs/api.md | 对外契约 | 契约变化时(附变更记录) |
 | docs/decisions/ | 决策与取舍(ADR) | 做出重大决策时,只增不改 |
 | specs/ | 需求过程 | spec-kit 流程中,完结后归档不再维护 |
+| docs/.sync-commit | 文档一致性基线(commit id),sync-docs 增量核对的起点 | vibe-init 写入;sync-docs / finalize-feature / vibe-init-docs 收尾时自动更新;合并冲突任取一边后重跑 sync-docs |
 
 ## ADR(架构决策记录)
 
