@@ -18,6 +18,8 @@ services:
       - id: user-service
         via: REST                    # REST | gRPC | MQ | DB | 其他
         contract: user-service:docs/api.md
+        status: active               # 可选: active(默认,已生效) | planned(契约定稿未上线)
+        spec: "001"                  # 可选: 引入该依赖的总 spec 编号,用于溯源
 
   - id: user-service
     repo: https://github.com/your-org/user-service

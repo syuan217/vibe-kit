@@ -26,4 +26,4 @@ description: Creates a cross-application master spec in the vibe-kit hub repo fo
    ```
 
    用户在对应仓库粘贴即进入标准 spec-kit 流程(specify → clarify → plan → tasks → implement)。
-6. 若本需求会改变服务依赖关系,提醒同步 `registry/services.yaml` 并重新生成依赖图:`python3 scripts/registry-graph.py`。
+6. 若本需求会新增/改变服务依赖:契约定稿(contracts-approved)时即在 `registry/services.yaml` 以 `status: planned` + `spec: NNN` 预登记新依赖(上线关闭需求时转 `active`),并重新生成依赖图:`python3 scripts/registry-graph.py`。

@@ -52,6 +52,10 @@ def main() -> int:
                 errors.append(f"{sid}: 依赖了未登记的服务 {did}(请先登记该服务)")
             if dep.get("via") not in VALID_VIA:
                 errors.append(f"{sid} -> {did}: via 必须为 {sorted(VALID_VIA)} 之一")
+            if dep.get("status", "active") not in {"active", "planned"}:
+                errors.append(f"{sid} -> {did}: status 必须为 active 或 planned")
+            if dep.get("status") == "planned" and not dep.get("spec"):
+                warnings.append(f"{sid} -> {did}: planned 依赖建议标注 spec 编号以便溯源与关闭时转 active")
         if "consumers" in s:
             warnings.append(f"{sid}: consumers 请勿手工维护(由 depends_on 反推),建议删除该字段")
 

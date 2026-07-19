@@ -12,6 +12,8 @@
 | description | ✅ | 一句话职责 |
 | docs | ✅ | 文档指针(agents/architecture/api,相对仓库根) |
 | depends_on | ✅(可为 []) | 上游依赖:id + via(REST/gRPC/MQ/DB/其他)+ contract 指针 |
+| depends_on[].status | 可选 | `active`(默认,已生效)/ `planned`(契约定稿、尚未上线)——显式表达 hub 超前于应用的中间态 |
+| depends_on[].spec | 可选 | 引入该依赖的总 spec 编号,溯源用 |
 
 只声明 `depends_on`(我调用谁);"谁调用我"由脚本从全表反推,**不要手工维护 consumers**,避免双向声明打架。
 
@@ -32,6 +34,15 @@
 ## 定期校准(从代码反推)
 
 声明可能撒谎,代码不会。用 **registry-sync**(插件 skill 或 `prompts/registry-sync.md`)在应用仓库扫描真实调用——RPC 注解(Feign/Dubbo/SOFA 及 XML 配置)、构建坐标(其他服务的 api/client 包引用)、HTTP client、gRPC stub、MQ 生产消费——与 registry 声明对比,报告缺失/多余/方式不符的依赖。**注解与坐标得出的关系是推测,必须经人逐项确认(附证据)后才写入 registry**,注意"仅引用 DTO 未实际调用"的假阳性。建议:每次大需求后、或每月对全部服务跑一轮。
+
+## 与应用文档的对应关系
+
+hub 与应用文档存在受控时间差,规则是让它**可见、可控**,而非假装不存在:
+
+1. **职责边界压缩不对应面积**:hub 只存关系与指针,契约细节在应用仓库 `docs/api.md` 随代码分支走。永远不要把接口定义抄进 hub——抄一份就多一份漂移源。
+2. **变更时序(互链规则)**:应用 PR(含文档)与 hub registry 变更同时提出,PR 描述互相引用链接,前后脚合并。两边 git 历史留下对齐记录,审计时可互相追溯。
+3. **中间态显式化**:跨应用需求契约定稿(contracts-approved)时,新依赖可先以 `status: planned` 预登记;全部上线、需求关闭时转 `active`(发起人在关闭总 spec 时顺手完成)。AI 做影响面分析时能同时看到"已生效"与"在途"的关系。
+4. **兜底**:registry-sync 从代码(main)反推校准,修正一切声明漂移。
 
 ## 变更流程
 
