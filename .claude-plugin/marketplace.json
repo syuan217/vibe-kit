@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "vibe-kit",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Spec-driven vibe coding workflow for polyrepo teams",
   "owner": {
     "name": "Yinn",
@@ -12,8 +12,8 @@
     {
       "name": "vibe-kit",
       "source": "./plugin",
-      "description": "6 skills: vibe-init (onboard repo), vibe-init-docs (docs from code), rebuild-wiki (code-locating wiki), cross-app-spec, finalize-feature, sync-docs",
-      "version": "0.3.0",
+      "description": "7 skills: vibe-init (onboard repo), vibe-init-docs (docs from code), rebuild-wiki (code-locating wiki), cross-app-spec, finalize-feature, sync-docs, registry-sync (calibrate service deps)",
+      "version": "0.3.1",
       "category": "workflow",
       "keywords": [
         "spec-kit",

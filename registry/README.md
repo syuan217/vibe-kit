@@ -31,7 +31,7 @@
 
 ## 定期校准(从代码反推)
 
-声明可能撒谎,代码不会。用 **registry-sync**(插件 skill 或 `prompts/registry-sync.md`)在应用仓库扫描真实调用(HTTP client、gRPC stub、MQ 生产消费),与 registry 声明对比,报告缺失/多余/方式不符的依赖。建议:每次大需求后、或每月对全部服务跑一轮。
+声明可能撒谎,代码不会。用 **registry-sync**(插件 skill 或 `prompts/registry-sync.md`)在应用仓库扫描真实调用——RPC 注解(Feign/Dubbo/SOFA 及 XML 配置)、构建坐标(其他服务的 api/client 包引用)、HTTP client、gRPC stub、MQ 生产消费——与 registry 声明对比,报告缺失/多余/方式不符的依赖。**注解与坐标得出的关系是推测,必须经人逐项确认(附证据)后才写入 registry**,注意"仅引用 DTO 未实际调用"的假阳性。建议:每次大需求后、或每月对全部服务跑一轮。
 
 ## 变更流程
 

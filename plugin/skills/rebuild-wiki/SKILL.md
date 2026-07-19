@@ -9,7 +9,7 @@ description: Generates or rebuilds a code-locating wiki (docs/wiki/ with code-ma
 
 ## 步骤
 
-1. 扫描代码:目录结构、入口(main/启动类)、路由/controller、服务层、数据访问、消息生产与消费、定时任务、配置与横切组件(鉴权、错误处理、迁移)。
+1. 扫描代码:目录结构、入口(main/启动类)、路由/controller、RPC 提供方注解(Dubbo `@DubboService`/SOFA `@SofaService`/Feign 服务端)、服务层、数据访问、消息生产与消费、定时任务、配置与横切组件(鉴权、错误处理、迁移)。
 2. **按业务域划分模块**(不是按技术分层;5~15 个为宜),生成:
    - `docs/wiki/README.md` — 模块索引(模板 `references/wiki-readme.md`)
    - `docs/wiki/code-map.md` — 功能定位表 + 横切关注点表(模板 `references/code-map.md`)
