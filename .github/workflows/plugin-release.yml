@@ -9,7 +9,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Validate plugin & marketplace manifests
         run: |
           python3 - <<'EOF'
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Package plugin
         run: cd plugin && zip -r ../vibe-kit.plugin . -x "*.DS_Store"
       - name: Create release with artifact
