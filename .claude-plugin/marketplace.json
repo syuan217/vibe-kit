@@ -5,7 +5,8 @@
   "description": "Spec-driven vibe coding workflow for polyrepo teams",
   "owner": {
     "name": "Yinn",
-    "email": "limitsy217@gmail.com"
+    "email": "limitsy217@gmail.com",
+    "url": "https://github.com/gentBai"
   },
   "plugins": [
     {
@@ -14,7 +15,13 @@
       "description": "6 skills: vibe-init (onboard repo), vibe-init-docs (docs from code), rebuild-wiki (code-locating wiki), cross-app-spec, finalize-feature, sync-docs",
       "version": "0.2.0",
       "category": "workflow",
-      "keywords": ["spec-kit", "documentation", "wiki", "workflow", "microservices"]
+      "keywords": [
+        "spec-kit",
+        "documentation",
+        "wiki",
+        "workflow",
+        "microservices"
+      ]
     }
   ]
 }

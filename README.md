@@ -7,7 +7,7 @@
 本仓库同时是插件市场(`.claude-plugin/marketplace.json`),推送到 GitHub 后即可直接安装:
 
 ```
-/plugin marketplace add <你的GitHub用户名>/vibe-kit
+/plugin marketplace add gentBai/vibe-kit
 /plugin install vibe-kit@vibe-kit
 ```
 

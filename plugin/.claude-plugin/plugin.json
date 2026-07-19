@@ -5,5 +5,13 @@
   "author": {
     "name": "Yinn"
   },
-  "keywords": ["spec-kit", "documentation", "wiki", "workflow", "microservices"]
+  "keywords": [
+    "spec-kit",
+    "documentation",
+    "wiki",
+    "workflow",
+    "microservices"
+  ],
+  "homepage": "https://github.com/gentBai/vibe-kit",
+  "repository": "https://github.com/gentBai/vibe-kit"
 }
