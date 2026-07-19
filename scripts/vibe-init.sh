@@ -24,11 +24,23 @@ done
   exit 1
 }
 
-command -v specify >/dev/null 2>&1 || {
-  echo "错误: 未安装 specify CLI,请先执行:"
-  echo "  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
-  exit 1
-}
+if ! command -v specify >/dev/null 2>&1; then
+  if command -v uv >/dev/null 2>&1; then
+    echo "未检测到 specify CLI(spec-kit)。"
+    read -r -p "是否现在安装? [y/N] " ans
+    if [[ "$ans" == "y" || "$ans" == "Y" ]]; then
+      uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+    else
+      echo "已取消。手动安装: uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
+      exit 1
+    fi
+  else
+    echo "错误: 未安装 specify CLI,且缺少 uv(其安装器)。请依次执行:"
+    echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
+    echo "  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
+    exit 1
+  fi
+fi
 
 # 1. spec-kit 初始化:每个 agent 各跑一次,.specify/ 核心共享,各 agent 命令目录都会生成
 IFS=',' read -ra AGENTS <<< "$INTEGRATIONS"

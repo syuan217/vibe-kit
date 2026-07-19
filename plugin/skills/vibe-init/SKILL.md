@@ -9,8 +9,9 @@ description: Initializes the vibe-kit spec-driven workflow in an application rep
 
 1. 确认当前在应用仓库根目录(存在 `.git/`),否则让用户切换或指定路径。
 2. 定位 kit 与 hub:kit(模板/脚本来源)即 vibe-kit 仓库本地路径;hub(registry/总 spec 所在)按优先级定位——`--hub` 参数 → `$VIBE_HUB` 环境变量 → 与 kit 同仓库(默认合一模式)。团队用独立 hub 时,先用 `init-hub.sh <目录> --git` 创建。初始化完成后应用仓库根会生成 `.vibe-hub` 文件记录 hub 路径(已加入 .gitignore,属个人本地配置)。
-3. 检查 `specify` CLI:`command -v specify`。未安装则给出安装命令并等待用户确认安装:
+3. 检查 `specify` CLI:`command -v specify`。未安装则询问用户,**经确认后代为执行安装**:
    `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`
+   (若连 `uv` 也没有,先经确认安装 uv:`curl -LsSf https://astral.sh/uv/install.sh | sh`。未经用户确认不得安装任何软件。)
 
 ## 执行
 
