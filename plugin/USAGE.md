@@ -30,7 +30,7 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 前置条件:
 
 1. **spec-kit CLI**(bootstrap 时需要):`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`(vibe-init skill 会自动检查并提示)
-2. **hub 仓库本地 clone**:vibe-init 和 cross-app-spec 需要;首次使用时 AI 会询问 hub 路径,告诉它即可
+2. **hub 目录**:默认与 kit 同仓库;可用 `init-hub.sh` 分离为独立仓库或本地目录(三种形态见 hub 仓库 WORKFLOW.md §1.1;团队协作必须是共享 git 仓库)。应用仓库根的 `.vibe-hub` 文件记录其位置,AI 据此定位
 3. 应用仓库是 git 仓库
 
 ## 三、七个 Skill 详解
@@ -125,7 +125,7 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 1. **自动触发,不等用户点名**:用户说出各 skill 描述中的触发语义时直接调用对应 skill;`/speckit.implement` 完成时主动建议 finalize-feature;发现文档与代码不一致时主动建议 sync-docs。
 2. **定位代码先查表**:在已接入 vibe-kit 的仓库改代码前,先读 `docs/wiki/code-map.md` 与相关模块页;查不到再全库搜索,并在任务结束时把新发现补进 code-map。
 3. **skill 链**:vibe-init(存量仓库)→ 建议 vibe-init-docs;vibe-init-docs → 内部调用 rebuild-wiki;cross-app-spec 完成 → 引导用户到各应用仓库走 spec-kit 流程;任何 skill 发现契约/依赖变化 → 提醒更新 hub registry 并重跑 `scripts/registry-graph.py`。
-4. **hub 定位**:需要 hub 时先从对话上下文找路径,找不到问用户;不要猜。
+4. **hub 定位**:按优先级——应用仓库根 `.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → 问用户;不要猜。
 5. **事实边界**:文档中的路径、符号、接口必须在代码中真实存在,生成后用搜索工具核对;不确定标 `TODO(待确认)`,禁止臆造;行号永远不写入文档。
 6. **确认后提交**:所有 skill 的产出先给用户变更摘要,确认后再 commit(各 skill 内规定了 commit message 格式)。
 7. **只在职责内动手**:文档类 skills 只改文档不改代码;宪法基线条款不得修改。

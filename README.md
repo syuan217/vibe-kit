@@ -33,7 +33,8 @@ prompts/
   sync-docs.md               # 增量补齐文档(日常失真修复)
   registry-sync.md           # 从代码反推服务依赖,校准 registry
 scripts/
-  vibe-init.sh               # 在应用仓库初始化本工作流
+  vibe-init.sh               # 在应用仓库初始化本工作流(--hub 指定独立 hub)
+  init-hub.sh                # 创建与 kit 分离的独立 hub 目录/仓库
   registry-graph.py          # 从 registry 生成 mermaid 服务依赖图
   registry-check.py          # registry 结构与引用校验(CI/本地)
 plugin/                      # Claude 插件源码(6 个 skills,打包为 vibe-kit.plugin 分发)
@@ -47,14 +48,16 @@ plugin/                      # Claude 插件源码(6 个 skills,打包为 vibe-k
    uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
    ```
 
-2. 在某个应用仓库根目录执行:
+2. (可选)如需 hub 与 kit 分离:`/path/to/vibe-kit/scripts/init-hub.sh ~/team-hub --git`(三种部署形态见 WORKFLOW.md §1.1)
+
+3. 在某个应用仓库根目录执行:
 
    ```bash
-   /path/to/vibe-kit/scripts/vibe-init.sh --integrations claude,cursor,codex
+   /path/to/vibe-kit/scripts/vibe-init.sh --integrations claude,cursor,codex [--hub ~/team-hub]
    ```
 
-3. 按脚本输出提示:填写 `AGENTS.md`、在本仓库 `registry/services.yaml` 登记该应用、提交入库。
+4. 按脚本输出提示:填写 `AGENTS.md`、在 hub 的 `registry/services.yaml` 登记该应用、提交入库。
 
-4. 用一个真实需求走流程:`/speckit.specify → clarify → plan → tasks → implement`。
+5. 用一个真实需求走流程:`/speckit.specify → clarify → plan → tasks → implement`。
 
 跨应用需求:先在本仓库 `specs/` 复制 `_template/` 立总 spec,再到各应用仓库走上述流程(见 `specs/README.md`)。

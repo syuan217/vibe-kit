@@ -9,7 +9,7 @@ description: Creates a cross-application master spec in the vibe-kit hub repo fo
 
 ## 步骤
 
-1. 定位 hub 仓库(vibe-kit)本地路径,未知则询问用户。
+1. 定位 hub,按优先级:当前应用仓库根 `.vibe-hub` 文件内容 → `$VIBE_HUB` 环境变量 → 对话上下文 → 询问用户;不要猜。
 2. **影响面分析**:读 hub `registry/services.yaml`,根据需求描述与依赖关系推断涉及哪些服务、通过什么方式(REST/gRPC/MQ)关联;把推断结果给用户确认,不确定的服务标注存疑。
 3. 在 hub `specs/` 下建 `NNN-需求名/spec.md`(NNN 取现有最大编号 +1,三位数;模板 `references/spec-template.md`),重点填写:
    - 需求概述(what/why,不谈实现)
