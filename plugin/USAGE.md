@@ -21,7 +21,7 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 安装(推荐,从 GitHub):
 
 ```
-/plugin marketplace add gentBai/vibe-kit
+/plugin marketplace add syuan217/vibe-kit
 /plugin install vibe-kit@vibe-kit
 ```
 

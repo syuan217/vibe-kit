@@ -23,5 +23,5 @@
 
 ## 安装
 
-从 GitHub(推荐):`/plugin marketplace add gentBai/vibe-kit`,然后 `/plugin install vibe-kit@vibe-kit`。
+从 GitHub(推荐):`/plugin marketplace add syuan217/vibe-kit`,然后 `/plugin install vibe-kit@vibe-kit`。
 或将 GitHub Release 中的 `vibe-kit.plugin` 文件拖入 Cowork 会话点击安装。
