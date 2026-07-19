@@ -1,11 +1,12 @@
 ---
 name: sync-docs
-description: Incrementally syncs project docs (AGENTS.md, docs/, wiki code-map) with actual code state by scanning git changes since the last doc update. Use when the user says "同步文档", "补文档", "文档过期了", "sync docs", or when docs are found inconsistent with code during other work.
+description: Incrementally syncs project docs (AGENTS.md, docs/, wiki code-map) with actual code state by scanning git changes since the last doc update. Use when the user says "同步文档", "补文档", "文档过期了", "sync docs", after branch merges or rebases cause doc conflicts or drift ("合并后文档冲突"), or when docs are found inconsistent with code during other work.
 ---
 
 # sync-docs — 增量补齐项目文档
 
 目标:让 AGENTS.md 与 docs/ 反映代码当前真实状态。**只改文档,不改代码。**
+适用场景包括分支合并/rebase 之后:文档冲突不逐行手解——先解代码冲突完成合并,再跑本流程以合并后的代码为准重建文档条目(文档是代码的投影,冲突服从实体)。
 
 ## 步骤
 

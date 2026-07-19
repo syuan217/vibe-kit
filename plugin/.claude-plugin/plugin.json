@@ -1,6 +1,6 @@
 {
   "name": "vibe-kit",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Spec-driven vibe coding workflow for polyrepo teams: bootstrap app repos, generate code-locating wikis, keep docs in sync with code, and coordinate cross-app specs",
   "author": {
     "name": "Yinn"
