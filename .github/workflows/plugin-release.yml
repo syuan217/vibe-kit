@@ -1,0 +1,41 @@
+# 校验插件结构;打 tag(v*)时自动打包 vibe-kit.plugin 并附到 GitHub Release
+name: plugin-release
+on:
+  pull_request:
+    paths: ["plugin/**", ".claude-plugin/**"]
+  push:
+    tags: ["v*"]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate plugin & marketplace manifests
+        run: |
+          python3 - <<'EOF'
+          import json, pathlib, re, sys
+          m = json.load(open('plugin/.claude-plugin/plugin.json'))
+          assert re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', m['name']), 'plugin name must be kebab-case'
+          mp = json.load(open('.claude-plugin/marketplace.json'))
+          assert mp['plugins'], 'marketplace has no plugins'
+          assert mp['plugins'][0]['version'] == m['version'], 'version mismatch: marketplace.json vs plugin.json'
+          for d in pathlib.Path('plugin/skills').iterdir():
+              t = (d / 'SKILL.md').read_text()
+              assert t.startswith('---') and 'name:' in t and 'description:' in t, f'{d.name}: bad frontmatter'
+          print('validation OK')
+          EOF
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package plugin
+        run: cd plugin && zip -r ../vibe-kit.plugin . -x "*.DS_Store"
+      - name: Create release with artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: vibe-kit.plugin
+          generate_release_notes: true

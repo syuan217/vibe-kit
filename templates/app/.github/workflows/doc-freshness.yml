@@ -1,0 +1,23 @@
+# 文档新鲜度检查:源码变了但文档没动时发出警告。
+# 试用期用 warning;团队推广稳定后可把最后一行改为 exit 1 使其成为硬卡点。
+name: doc-freshness
+on:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check docs updated when source changed
+        run: |
+          git fetch origin "${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
+          echo "changed files:"; echo "$CHANGED"
+          SRC=$(echo "$CHANGED" | grep -Ev '^(docs/|specs/|prompts/|\.specify/|\.github/|AGENTS\.md|CLAUDE\.md)' \
+                                | grep -E '\.(go|java|kt|py|ts|tsx|js|jsx|rs|rb|php|cs|sql|proto|vue)$' || true)
+          DOC=$(echo "$CHANGED" | grep -E '^(docs/|specs/|AGENTS\.md)' || true)
+          if [ -n "$SRC" ] && [ -z "$DOC" ]; then
+            echo "::warning::源码有变更但 docs/、AGENTS.md、specs/ 均未更新。若确实无需更新,请在 PR 描述中说明;否则请按 prompts/sync-docs.md 补齐文档。"
+          fi

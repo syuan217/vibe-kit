@@ -1,0 +1,30 @@
+# 服务注册表 — 全系统唯一权威的服务清单与依赖关系
+# 规则:
+#   1. 新应用 bootstrap 后必须在此登记
+#   2. 对外契约或依赖关系变更的 PR,须同步更新本文件
+#   3. AI 处理跨应用需求时应先读本文件确定影响面
+# 以下为示例条目,替换为真实服务
+version: 1
+services:
+  - id: order-service
+    repo: https://github.com/your-org/order-service
+    owner: yinn
+    description: 订单核心服务
+    docs:
+      agents: AGENTS.md              # 路径相对各自仓库根目录
+      architecture: docs/architecture.md
+      api: docs/api.md
+    depends_on:                      # 上游依赖(本服务调用谁)
+      - id: user-service
+        via: REST                    # REST | gRPC | MQ | DB | 其他
+        contract: user-service:docs/api.md
+
+  - id: user-service
+    repo: https://github.com/your-org/user-service
+    owner: teammate
+    description: 用户与鉴权服务
+    docs:
+      agents: AGENTS.md
+      architecture: docs/architecture.md
+      api: docs/api.md
+    depends_on: []
