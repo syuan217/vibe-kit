@@ -106,6 +106,8 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 
 ## 四、典型场景(人视角)
 
+> 完整的需求处理手册(判断类型、每步操作、角色分工、异常情况)见 hub 仓库 `docs/requirement-playbook.md`。
+
 **接入一个存量服务**:打开仓库 → "接入 vibe-kit"(vibe-init)→ "反向生成文档"(vibe-init-docs,含 wiki)→ 按提示去 hub 登记 registry → 提交。
 
 **做一个单应用需求**:`/speckit.specify` → `clarify` → `plan` → `tasks` → `implement`(AI 动手前会自动查 wiki code-map 定位代码)→ "收尾一下"(finalize-feature)→ 提 PR。

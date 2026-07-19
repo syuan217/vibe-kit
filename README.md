@@ -21,7 +21,8 @@ VERSION                      # kit 版本
 registry/services.yaml       # 服务注册表:全系统服务清单、依赖关系、文档指针
 registry/README.md           # registry 维护规范(更新时机、校验、校准)
 specs/                       # 跨应用需求总 spec(_template/ 为模板)
-docs/                        # 公共文档(总体架构、团队约定、文档写作规范 doc-style.md)
+docs/                        # 公共文档(总体架构、团队约定、doc-style 写作规范)
+docs/requirement-playbook.md # 需求处理手册:一个需求下来时怎么做(团队必读)
 templates/
   constitution-base.md       # 团队工程宪法基线(bootstrap 时注入应用仓库)
   app/                       # 应用仓库脚手架(AGENTS.md、README、docs、ADR、CI、PR 模板等)

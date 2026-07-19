@@ -76,6 +76,8 @@
 
 ## 3. 端到端开发流程
 
+> 给团队成员的详细操作手册(每步做什么、说什么、谁负责、常见情况处理)见 **`docs/requirement-playbook.md`**,以下为流程概要。
+
 **单应用需求:**
 
 1. 在应用仓库:`/speckit.specify <需求描述>`(自动建分支与 `specs/NNN-xxx/spec.md`)
