@@ -1,6 +1,6 @@
 # 团队公共约定
 
-> 跨仓库通用的工程约定。强约束条款应进入 `../templates/constitution-base.md`(spec-kit 各阶段会读取),本文放较软的惯例与说明。
+> 跨仓库通用的工程约定。强约束条款应进入 `../plugin/templates/constitution-base.md`(spec-kit 各阶段会读取),本文放较软的惯例与说明。
 
 ## 命名与结构
 

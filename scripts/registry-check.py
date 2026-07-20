@@ -8,7 +8,10 @@ import pathlib
 import re
 import sys
 
-import yaml
+try:
+    import yaml
+except ImportError:
+    sys.exit("缺少依赖 PyYAML,请先安装: pip install pyyaml")
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VALID_VIA = {"REST", "gRPC", "MQ", "DB", "其他"}

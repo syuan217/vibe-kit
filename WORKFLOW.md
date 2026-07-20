@@ -18,7 +18,7 @@
 │  registry/services.yaml   服务清单 + 依赖关系 + 文档指针          │
 │  specs/                   跨应用需求总 spec                      │
 │  docs/                    公共文档(总体架构、团队约定)           │
-│  templates/               应用仓库脚手架(AGENTS.md、CI、宪法基线)│
+│  plugin/templates/        应用仓库脚手架(AGENTS.md、CI、宪法基线)│
 │  prompts/                 sync-docs / vibe-init-docs 等文档 prompt│
 │  scripts/vibe-init.sh     应用仓库初始化脚本                     │
 └──────────────┬──────────────────┬──────────────────┬───────────┘
@@ -72,7 +72,7 @@ hub(registry + 跨应用 specs + 公共 docs)与 kit(模板/脚本/插件)职责
 
 **机制:三道防线,前两道防止、第三道兜底修复。**
 
-1. **流程内建**(宪法约束):`templates/constitution-base.md` 规定"任务完成定义包含文档更新"、"文档唯一权威来源是 git 仓库"。spec-kit 各阶段都读 constitution,AI 在 implement 阶段会自动把文档更新纳入任务。
+1. **流程内建**(宪法约束):`plugin/templates/constitution-base.md` 规定"任务完成定义包含文档更新"、"文档唯一权威来源是 git 仓库"。spec-kit 各阶段都读 constitution,AI 在 implement 阶段会自动把文档更新纳入任务。
 2. **PR/CI 卡点**:PR 模板含文档 checklist;CI(`doc-freshness.yml`)检测"源码变了但 docs/、AGENTS.md、specs/ 都没动"并发出警告(试用期用 warning,推广稳定后可改为 fail)。
 3. **兜底修复**:`prompts/sync-docs.md`——任何人用任何 AI 工具说"按 prompts/sync-docs.md 执行",即可扫描上次文档更新以来的代码变更,反推补齐文档。即使有人漏了,下一个人一条命令修复,文档债不会滚雪球。对完全没有文档的存量仓库,用 `prompts/vibe-init-docs.md` 从代码反向生成整套文档。
 

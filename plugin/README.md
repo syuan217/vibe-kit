@@ -19,7 +19,7 @@
 ## 说明
 
 - **hub 依赖**:vibe-init 与 cross-app-spec 需要本地有 vibe-kit hub 仓库(模板、宪法、registry 的唯一权威来源);其余 skills 可独立工作。
-- **跨工具策略**:本插件服务 Claude Code / Cowork 用户;Cursor、Codex 同事继续使用各应用仓库内 `prompts/*.md`(内容同源)。修改工作流时,`plugin/skills/` 与 hub `prompts/`、`templates/` 需同步更新。
+- **跨工具策略**:本插件服务 Claude Code / Cowork 用户;Cursor、Codex 同事继续使用各应用仓库内 `prompts/*.md`(内容同源)。修改工作流时,`plugin/skills/` 与 `prompts/`、`plugin/templates/` 需同步更新。
 - 前置:spec-kit CLI(`specify`),vibe-init 会检查并给出安装命令。
 
 ## 安装

@@ -6,14 +6,14 @@
 
 vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调"的能力封装为 7 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
 
-它与两个仓库协作:
+模板与团队宪法**随插件分发**(位于插件内 `templates/`),安装即可用,无需 clone vibe-kit 仓库。插件与两方协作:
 
 ```
-vibe-kit 插件(装在 Claude 里)
-    │ 读模板/宪法/registry        │ 生成/维护文档
+vibe-kit 插件(装在 Claude 里,自带模板/宪法)
+    │ 读 registry/总 spec         │ 生成/维护文档
     ▼                            ▼
-hub 仓库(vibe-kit)          应用仓库(你的服务)
-  registry、总spec、模板        AGENTS.md、docs/、wiki、specs/
+hub 仓库(团队协调,可选)      应用仓库(你的服务)
+  registry、总spec             AGENTS.md、docs/、wiki
 ```
 
 ## 二、安装与前置条件
@@ -30,7 +30,7 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 前置条件:
 
 1. **spec-kit CLI**(bootstrap 时需要):`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`(vibe-init skill 会自动检查并提示)
-2. **hub 目录**:默认与 kit 同仓库;可用 `init-hub.sh` 分离为独立仓库或本地目录(三种形态见 hub 仓库 WORKFLOW.md §1.1;团队协作必须是共享 git 仓库)。应用仓库根的 `.vibe-hub` 文件记录其位置,AI 据此定位
+2. **hub 目录**(可选,跨应用协调时需要):团队共享的 registry/总 spec 仓库,可用 vibe-kit 仓库的 `init-hub.sh` 创建(三种形态见 WORKFLOW.md §1.1;团队协作必须是共享 git 仓库)。应用仓库根的 `.vibe-hub` 文件记录其位置,AI 据此定位;**定位不到时 AI 会询问你,不会自行 clone 仓库**。暂无 hub 也可先接入,之后补登记
 3. 应用仓库是 git 仓库
 
 ## 三、七个 Skill 详解
@@ -42,9 +42,9 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 | 用途 | 把一个应用仓库接入 vibe-kit 工作流 |
 | 什么时候用 | 新建仓库后,或存量仓库首次接入 |
 | 你可以说 | "把这个仓库接入 vibe-kit" / "初始化工作流" |
-| 需要提供 | hub 仓库路径;团队用哪些 AI 工具(默认 claude,cursor,codex) |
-| 做什么 | 对每个 AI 工具跑 spec-kit init;拷贝 AGENTS.md/docs/wiki/prompts 模板;注入团队宪法;记录 kit 版本 |
-| 之后 | 存量仓库紧接着跑 vibe-init-docs;去 hub registry 登记本服务;全部提交入库 |
+| 需要提供 | hub 仓库路径(可选,没有则跳过);团队用哪些 AI 工具(默认 claude,cursor,codex) |
+| 做什么 | 对每个 AI 工具跑 spec-kit init;从插件内拷贝 AGENTS.md/docs/wiki/prompts 模板;注入团队宪法;合并 .gitignore(忽略 .specify/、specs/、agent 命令目录等本地生成物);记录 kit 版本 |
+| 之后 | 存量仓库紧接着跑 vibe-init-docs;去 hub registry 登记本服务;提交 AGENTS.md、docs/、prompts/ |
 
 ### 2. vibe-init-docs — 存量仓库反向生成文档
 
@@ -134,5 +134,12 @@ hub 仓库(vibe-kit)          应用仓库(你的服务)
 
 - **skill 没有自动触发?** 直接说 skill 名即可,如"用 sync-docs 检查一下"。
 - **Cursor / Codex 同事怎么办?** 插件仅服务 Claude 用户;其他工具用户使用应用仓库内 `prompts/*.md`(内容与插件同源),效果一致。
-- **插件和 hub 里的 prompts 改了一边怎么办?** 二者同源,修改工作流时须同步更新 `plugin/skills/` 与 hub `prompts/`、`templates/`,然后重新打包分发 `.plugin`。
+- **插件和 hub 里的 prompts 改了一边怎么办?** 二者同源,修改工作流时须同步更新 `plugin/skills/` 与 `prompts/`、`plugin/templates/`,然后重新打包分发 `.plugin`。
 - **升级插件?** hub 仓库 `plugin/` 目录改完、`plugin.json` 与 `.claude-plugin/marketplace.json` 版本号同步递增、推送 GitHub 并打 tag(CI 自动发 Release);团队执行 `/plugin marketplace update vibe-kit` 后重装即可。
+- **从 0.4.x 升级到 0.5.0?** 0.5.0 起 `docs/.sync-commit`、`.vibe-hub`、`.vibe-kit-version` 改为本地文件不入库。已接入的应用仓库升级后执行一次:
+
+  ```bash
+  git rm --cached docs/.sync-commit .vibe-hub .vibe-kit-version 2>/dev/null || true
+  ```
+
+  然后重跑 vibe-init(合并新 `.gitignore` 条目,已有文件不会被覆盖),提交 `.gitignore` 与上述删除。

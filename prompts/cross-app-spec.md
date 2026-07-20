@@ -1,17 +1,13 @@
----
-name: cross-app-spec
-description: Creates a cross-application master spec in the vibe-kit hub repo for requirements spanning multiple services - analyzes impact via the service registry, defines contract changes first, and splits work per service. Use when the user says "跨应用需求", "这个需求涉及多个服务", "建总 spec", "cross-app spec", or "影响面分析".
----
-
 # cross-app-spec — 跨应用需求总 spec
 
-适用:涉及 **2 个及以上应用**的需求(单应用需求直接在其仓库走 `/speckit.specify`)。
+> 用法:在 **hub 仓库**中对任意 AI 工具说"按 prompts/cross-app-spec.md 建总 spec:<需求描述>"。
+> 适用:涉及 **2 个及以上应用**的需求(单应用需求直接在其仓库走 `/speckit.specify`)。
 
 ## 步骤
 
-1. 定位 hub,按优先级:当前应用仓库根 `.vibe-hub` 文件内容 → `$VIBE_HUB` 环境变量 → 对话上下文 → **询问用户**;不要猜,**禁止为定位 hub 而 clone 任何仓库**。
+1. 定位 hub,按优先级:当前应用仓库根 `.vibe-hub` 文件内容 → `$VIBE_HUB` 环境变量 → 对话上下文 → **询问用户**;不要猜,**禁止为定位 hub 而 clone 任何仓库**(已在 hub 仓库中执行时即当前目录)。
 2. **影响面分析**:读 hub `registry/services.yaml`,根据需求描述与依赖关系推断涉及哪些服务、通过什么方式(REST/gRPC/MQ)关联;把推断结果给用户确认,不确定的服务标注存疑。
-3. 在 hub `specs/` 下建 `NNN-需求名/spec.md`(NNN 取现有最大编号 +1,三位数;模板 `references/spec-template.md`),重点填写:
+3. 在 hub `specs/` 下建 `NNN-需求名/spec.md`(NNN 取现有最大编号 +1,三位数;模板 `specs/_template/spec.md`),重点填写:
    - 需求概述(what/why,不谈实现)
    - 影响面表(服务、仓库、变更类型;子 spec 列暂留空)
    - **契约变更**(先于实现定稿,标注兼容/破坏性)

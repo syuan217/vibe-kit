@@ -9,7 +9,7 @@ description: Calibrates the service registry (registry/services.yaml in the vibe
 
 ## 步骤
 
-1. 定位 hub(优先级:应用仓库根 `.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → 询问用户),读 `registry/services.yaml` 中本服务条目(未登记则视为全新登记)。
+1. 定位 hub(优先级:应用仓库根 `.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → **询问用户**;不要猜,**禁止为定位 hub 而 clone 任何仓库**),读 `registry/services.yaml` 中本服务条目(未登记则视为全新登记)。
 2. 扫描代码找出**真实**对外依赖(注解与构建配置是重要证据源):
    - RPC 注解:Feign(`@FeignClient(name=...)`)、Dubbo(`@DubboReference`/`@Reference` 消费方,`@DubboService`/`@Service` 提供方)、SOFA(`@SofaReference`/`@SofaService`)及对应 XML 配置(`<dubbo:reference>`/`<sofa:reference>`);按注解中的服务名/接口归属映射到对端服务
    - 构建坐标:pom.xml / build.gradle 中引用其他服务发布的 `xxx-api`/`xxx-client`/`xxx-facade` 等 artifact,按坐标推测对端服务

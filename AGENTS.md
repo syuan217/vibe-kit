@@ -6,7 +6,7 @@
 
 为多仓库微服务团队提供 spec-driven AI 开发工作流。完整方案见 WORKFLOW.md,目录说明见 README.md。
 
-- **kit 部分**(工具,随版本演进):`templates/`、`prompts/`、`scripts/`、`plugin/`、`VERSION`
+- **kit 部分**(工具,随版本演进):`plugin/`(含 `plugin/templates/`)、`prompts/`、`scripts/`、`VERSION`
 - **hub 部分**(团队数据,持续更新):`registry/`、`specs/`、`docs/`
 - **市场清单**:`.claude-plugin/marketplace.json`(本仓库即插件市场)
 
@@ -19,11 +19,15 @@
 
 ## 修改本仓库的硬性约定(AI 必须遵守)
 
-1. **三处同源必须同步改**:工作流内容同时存在于 `plugin/skills/*/SKILL.md`(Claude 用户)、`prompts/*.md`(Cursor/Codex 用户)、`templates/app/prompts/*.md`(应用仓库副本)。改任何一处,必须同步另外两处对应文件;skill 的 references/ 模板与 `templates/`、`specs/_template/` 中的源模板同理。
+1. **同源必须同步改**(范围按工作流的操作对象精确划定,不要机械补齐副本):
+   - **三处同源**(skill + `prompts/` + `plugin/templates/app/prompts/`):finalize-feature、rebuild-wiki、sync-docs——在应用仓库日常执行,三类用户都需要。
+   - **两处同源**(skill + `prompts/`):cross-app-spec、registry-sync、vibe-init-docs——操作对象是 hub 或一次性执行,应用仓库不放副本。
+   - **仅 skill**:vibe-init——由 `scripts/vibe-init.sh` 驱动,逻辑变更须同步改脚本,不出 prompt 副本。
+   改任何一处,必须同步同组其余文件;skill 的 references/ 模板与 `plugin/templates/`、`specs/_template/` 中的源模板同理。
 2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json` 与 `.claude-plugin/marketplace.json` 两处版本号同步递增,`VERSION` 跟随,重新打包 .plugin;发布 = push + 打 `v*` tag(CI 自动发 Release)。
 3. **registry 变更**:改 `registry/services.yaml` 后运行 registry-check 与 registry-graph;规则见 `registry/README.md`。
 4. **文档规范**:遵循 `docs/doc-style.md`;修改模板时保持与 WORKFLOW.md、README.md、`plugin/USAGE.md` 的交叉引用一致。
-5. 团队宪法基线(`templates/constitution-base.md`)条款变更需团队评审,不得随手改。
+5. 团队宪法基线(`plugin/templates/constitution-base.md`)条款变更需团队评审,不得随手改。
 
 ## 文档地图
 

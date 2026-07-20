@@ -22,4 +22,4 @@ description: Incrementally syncs project docs (AGENTS.md, docs/, wiki code-map) 
    - docs/api.md:对外接口、消息/事件及变更记录表
 3. 保持既有文档格式;不确定标 `TODO(待确认)`,禁止臆造。
 4. 若对外契约有变化:docs/api.md 变更记录表补一行,提醒用户同步 hub `registry/services.yaml` 并通知消费方。
-5. 收尾更新基线:`git rev-parse HEAD > docs/.sync-commit`,随文档改动一起提交:`docs: sync docs with code`。(该文件合并冲突时任取一边即可——合并后重跑本流程会重置它。)
+5. 收尾:提交文档改动 `docs: sync docs with code`,并更新本地基线 `git rev-parse HEAD > docs/.sync-commit`(该文件已被 .gitignore 忽略,不入库;缺失时按第 1 步回退推导即可)。

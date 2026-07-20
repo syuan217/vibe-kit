@@ -1,0 +1,17 @@
+# ===== vibe-kit：本地配置与过程产物，不入库 =====
+# 个人本地 hub 路径配置
+.vibe-hub
+# kit 版本标记与文档同步基线（本机生效）
+.vibe-kit-version
+docs/.sync-commit
+# spec-kit 核心目录与过程产物（长期真相在 docs/，由 finalize-feature 沉淀）
+.specify/
+specs/
+# AI agent 命令目录（各自由 vibe-init 重新生成）
+.claude/
+.cursor/
+.codex/
+.windsurf/
+.gemini/
+.qwen/
+.kilocode/
