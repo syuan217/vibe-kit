@@ -16,6 +16,7 @@
 ## 目录
 
 ```
+AGENTS.md                    # 本仓库自身的 AI 上下文入口(修改本仓库前必读)
 WORKFLOW.md                  # 工作流方案(先读这个)
 VERSION                      # kit 版本
 registry/services.yaml       # 服务注册表:全系统服务清单、依赖关系、文档指针
