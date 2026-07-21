@@ -18,7 +18,11 @@ jobs:
           assert re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', m['name']), 'plugin name must be kebab-case'
           mp = json.load(open('.claude-plugin/marketplace.json'))
           assert mp['plugins'], 'marketplace has no plugins'
-          assert mp['plugins'][0]['version'] == m['version'], 'version mismatch: marketplace.json vs plugin.json'
+          version_file = open('VERSION').read().strip()
+          v = m['version']
+          assert mp['version'] == v, f'marketplace.json top version mismatch: {mp["version"]} vs plugin.json {v}'
+          assert mp['plugins'][0]['version'] == v, f'marketplace.json plugins[0] version mismatch: {mp["plugins"][0]["version"]} vs plugin.json {v}'
+          assert version_file == v, f'VERSION file mismatch: {version_file} vs plugin.json {v}'
           for d in pathlib.Path('plugin/skills').iterdir():
               t = (d / 'SKILL.md').read_text()
               assert t.startswith('---') and 'name:' in t and 'description:' in t, f'{d.name}: bad frontmatter'

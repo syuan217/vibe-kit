@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """校验 registry/services.yaml 的结构与引用完整性。
 
-用法: python3 scripts/registry-check.py
+用法: python3 scripts/registry-check.py [hub目录]
 退出码: 0 通过(允许有 warning);1 存在 error。CI 与本地均可运行。
 """
+import os
 import pathlib
 import re
 import sys
@@ -13,7 +14,29 @@ try:
 except ImportError:
     sys.exit("缺少依赖 PyYAML,请先安装: pip install pyyaml")
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+def find_hub() -> pathlib.Path:
+    """定位 hub(含 registry/services.yaml)。脚本可随插件分发,故不依赖自身位置。
+
+    优先级: 命令行参数 > $VIBE_HUB > 当前目录 > 脚本上级目录(合一/hub 内运行的回退)。
+    """
+    candidates = []
+    if len(sys.argv) > 1:
+        candidates.append(pathlib.Path(sys.argv[1]))
+    if os.environ.get("VIBE_HUB"):
+        candidates.append(pathlib.Path(os.environ["VIBE_HUB"]))
+    candidates.append(pathlib.Path.cwd())
+    candidates.append(pathlib.Path(__file__).resolve().parent.parent)
+    for c in candidates:
+        if (c / "registry" / "services.yaml").is_file():
+            return c.resolve()
+    sys.exit(
+        "未找到 hub(缺少 registry/services.yaml)。\n"
+        "用法: registry-check.py [hub目录],或设 $VIBE_HUB,或在 hub 根目录运行。"
+    )
+
+
+ROOT = find_hub()
 VALID_VIA = {"REST", "gRPC", "MQ", "DB", "其他"}
 REQUIRED = ["id", "repo", "owner", "description", "docs"]
 

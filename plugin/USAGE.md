@@ -123,7 +123,7 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 安装本插件后,agent 应遵守:
 
 1. **自动触发,不等用户点名**:用户说出各 skill 描述中的触发语义时直接调用对应 skill;`/speckit.implement` 完成时主动建议 finalize-feature;发现文档与代码不一致时主动建议 sync-docs。
-2. **定位代码先查表**:在已接入 vibe-kit 的仓库改代码前,先读 `docs/wiki/code-map.md` 与相关模块页;查不到再全库搜索,并在任务结束时把新发现补进 code-map。
+2. **定位代码先查表**:在已接入 vibe-kit 的仓库改代码前,先读 `docs/wiki/code-map.md` 与相关模块页;查不到再全库搜索,并在任务结束时把新发现补进 code-map。**跨仓库定位**(需要读对端服务代码)时,先在 hub 跑 `python3 scripts/vibe-paths.py resolve <service-id>` 取本地 clone 路径;未映射则询问用户去 `add`,**禁止为定位代码而 clone 任何仓库**;拿到本地路径后仍按本条规则读该仓库的 `docs/wiki/code-map.md` 再定位具体文件(机制见 `docs/local-paths.md`)。
 3. **skill 链**:vibe-init(存量仓库)→ 建议 vibe-init-docs;vibe-init-docs → 内部调用 rebuild-wiki;cross-app-spec 完成 → 引导用户到各应用仓库走 spec-kit 流程;任何 skill 发现契约/依赖变化 → 提醒更新 hub registry 并重跑 `scripts/registry-graph.py`。
 4. **hub 定位**:按优先级——应用仓库根 `.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → 问用户;不要猜。
 5. **事实边界**:文档中的路径、符号、接口必须在代码中真实存在,生成后用搜索工具核对;不确定标 `TODO(待确认)`,禁止臆造;行号永远不写入文档。
@@ -143,3 +143,18 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
   ```
 
   然后重跑 vibe-init(合并新 `.gitignore` 条目,已有文件不会被覆盖),提交 `.gitignore` 与上述删除。
+
+- **从 0.5.0 升级到 0.6.0?** 本次新增本地代码路径映射(`vibe-paths.py`)+ 发版自动化(`vibe-release.py`),以及 cross-app-spec / registry-sync / finalize-feature 的跨仓库跳转引导。按你的身份选对应步骤:
+
+  - **Claude 插件用户**:`/plugin marketplace update vibe-kit` 后重装——所有 skill 更新自动生效(覆盖本次大部分改动)。
+  - **已接入的应用仓库**:只有一个文件需要手动同步——`prompts/finalize-feature.md`(0.6.0 在步骤 4 末尾加了「跨仓库进度核对」引导)。`vibe-init.sh` 用 `cp -Rn` 不覆盖已有文件,重跑脚本**不会**刷新它,必须手动:
+
+    ```bash
+    # 在应用仓库根执行,从 vibe-kit 拷贝新版本覆盖
+    cp <vibe-kit-path>/plugin/templates/app/prompts/finalize-feature.md prompts/finalize-feature.md
+    git add prompts/finalize-feature.md
+    git commit -m "chore: sync finalize-feature.md to vibe-kit v0.6.0"
+    ```
+
+    其余 0.6.0 改动不影响应用仓库副本:`vibe-paths.py` 与 `docs/local-paths.md` 只在 hub 跑,应用仓库不放;cross-app-spec / registry-sync 的 prompt 副本按同源规则也不进应用仓库。
+  - **hub 维护者**:hub 本身已是 0.6.0,无需额外升级。可选:在 hub 根目录用 `python3 scripts/vibe-paths.py add <sid> <路径>` 登记自己机器上的服务 clone 路径,让 AI 跨仓库跳转生效(个人配置,不入库)。

@@ -13,5 +13,5 @@
    - AGENTS.md:命令、目录结构、约定如有变化
    - 重大技术决策 → docs/decisions/ 新增 ADR(复制 0000-adr-template.md)
 3. 实现与 plan 的偏离处,在 spec.md 末尾补「实现偏差」一节(一句话/条即可)。
-4. 跨应用需求:提醒用户回填 hub 总 spec 的影响面表格与状态;依赖关系变化则更新 hub registry/services.yaml。hub 定位:`.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → **询问用户**;不要猜,**禁止为定位 hub 而 clone 任何仓库**。
+4. 跨应用需求:提醒用户回填 hub 总 spec 的影响面表格与状态;依赖关系变化则更新 hub registry/services.yaml。hub 定位:`.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → **询问用户**;不要猜,**禁止为定位 hub 而 clone 任何仓库**。若需核对其它涉及服务的实现进度,先在 hub 跑 `python3 scripts/vibe-paths.py resolve <对端 service-id>` 取本地路径(见 `docs/local-paths.md`,未映射则询问用户)。
 5. 遵循 hub `docs/doc-style.md` 写作规范;输出变更摘要,确认后提交文档改动:`docs: finalize NNN-xxx`,并更新本地基线 `git rev-parse HEAD > docs/.sync-commit`(该文件已被 .gitignore 忽略,不入库)。

@@ -14,6 +14,8 @@
 
 - 校验 registry:`python3 scripts/registry-check.py`
 - 重生成依赖图:`python3 scripts/registry-graph.py`
+- 查询/维护服务本地路径:`python3 scripts/vibe-paths.py <list|add|check|resolve>`(详见 `docs/local-paths.md`)
+- 发版校验:`python3 scripts/vibe-release.py check`;发版 bump:`python3 scripts/vibe-release.py bump <版本>`(详见 `CHANGELOG.md`)
 - 打包插件:`cd plugin && zip -r ../vibe-kit.plugin . -x "*.DS_Store"`
 - 应用接入:`scripts/vibe-init.sh`;独立 hub:`scripts/init-hub.sh <目录> --git`
 
@@ -24,7 +26,7 @@
    - **两处同源**(skill + `prompts/`):cross-app-spec、registry-sync、vibe-init-docs——操作对象是 hub 或一次性执行,应用仓库不放副本。
    - **仅 skill**:vibe-init——由 `scripts/vibe-init.sh` 驱动,逻辑变更须同步改脚本,不出 prompt 副本。
    改任何一处,必须同步同组其余文件;skill 的 references/ 模板与 `plugin/templates/`、`specs/_template/` 中的源模板同理。
-2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json` 与 `.claude-plugin/marketplace.json` 两处版本号同步递增,`VERSION` 跟随,重新打包 .plugin;发布 = push + 打 `v*` tag(CI 自动发 Release)。
+2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json`(两处:顶层 + `plugins[0]`)、`VERSION` 四处版本号同步递增(CI 校验四处一致),`CHANGELOG.md` 加新版本条目,重新打包 .plugin。**先跑 `python3 scripts/vibe-release.py check` 报漂移,再 `bump <新版本>` 半自动处理**(改版本号、同步 skill 名册、起草 CHANGELOG、重打包)。发布 = push + 打 `v*` tag(CI 自动发 Release)。
 3. **registry 变更**:改 `registry/services.yaml` 后运行 registry-check 与 registry-graph;规则见 `registry/README.md`。
 4. **文档规范**:遵循 `docs/doc-style.md`;修改模板时保持与 WORKFLOW.md、README.md、`plugin/USAGE.md` 的交叉引用一致。
 5. 团队宪法基线(`plugin/templates/constitution-base.md`)条款变更需团队评审,不得随手改。
@@ -33,8 +35,10 @@
 
 - WORKFLOW.md — 工作流方案(痛点→机制、hub 部署形态)
 - README.md — 目录与快速开始
+- CHANGELOG.md — 版本变更记录(由 `scripts/vibe-release.py` 起草)
 - docs/requirement-playbook.md — 需求处理手册(团队必读)
 - docs/doc-style.md — 文档写作规范(含分支与文档规则)
+- docs/local-paths.md — 服务仓库本地路径映射(AI 跨仓库跳转)
 - registry/README.md — registry 维护规范
 - plugin/USAGE.md — 插件使用说明(人 + AI)
 - specs/README.md — 跨应用总 spec 流程

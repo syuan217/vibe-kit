@@ -38,7 +38,7 @@ scripts/
   init-hub.sh                # 创建与 kit 分离的独立 hub 目录/仓库
   registry-graph.py          # 从 registry 生成 mermaid 服务依赖图
   registry-check.py          # registry 结构与引用校验(CI/本地)
-plugin/                      # Claude 插件源码(6 个 skills,打包为 vibe-kit.plugin 分发)
+plugin/                      # Claude 插件源码(7 个 skills,打包为 vibe-kit.plugin 分发)
 ```
 
 ## 快速开始
