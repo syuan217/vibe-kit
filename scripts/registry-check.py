@@ -28,6 +28,7 @@ def main() -> int:
         print(f"ERROR: yaml 解析失败: {e}")
         return 1
 
+    reg = reg or {}  # 空文件时 safe_load 返回 None,兜底避免 AttributeError
     services = reg.get("services") or []
     ids = [s.get("id") for s in services]
 
@@ -64,8 +65,9 @@ def main() -> int:
 
     # 孤立服务提示
     for s in services:
-        if not (s.get("depends_on") or []) and s["id"] not in consumed:
-            warnings.append(f"{s['id']}: 孤立服务(无依赖也无消费方),确认是否真实")
+        sid = s.get("id", "<无id>")
+        if not (s.get("depends_on") or []) and sid not in consumed:
+            warnings.append(f"{sid}: 孤立服务(无依赖也无消费方),确认是否真实")
 
     # 依赖图新鲜度
     graph = ROOT / "docs" / "service-graph.md"

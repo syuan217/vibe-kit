@@ -52,8 +52,11 @@ done
 
 # 2. 拷贝应用模板(不覆盖已存在的文件;gitignore 模板单独合并处理)
 echo ">> 拷贝应用模板"
+had_gitignore=0; [[ -e ./gitignore ]] && had_gitignore=1  # 记录:用户原本是否有裸 gitignore
 cp -Rn "$TPL_DIR/app/." . || true
-rm -f ./gitignore  # 模板中的 gitignore 以合并方式写入 .gitignore,不落地为裸文件
+# 模板中的 gitignore 以合并方式写入 .gitignore,不落地为裸文件;
+# 仅清理本次拷入的副本,避免误删用户原有的同名文件
+(( had_gitignore )) || rm -f ./gitignore
 
 # 3. 注入团队 constitution 基线(仅当尚未存在有效内容时)
 mkdir -p .specify/memory
