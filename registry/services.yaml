@@ -1,32 +1,86 @@
-# 服务注册表 — 全系统唯一权威的服务清单与依赖关系
-# 规则:
-#   1. 新应用 bootstrap 后必须在此登记
-#   2. 对外契约或依赖关系变更的 PR,须同步更新本文件
-#   3. AI 处理跨应用需求时应先读本文件确定影响面
-# 以下为示例条目,替换为真实服务
-version: 1
+# 服务注册表 — 全系统唯一权威的服务清单与关系(schema v2)
+# 三类关系各有归处:
+#   - REST 直连 / 跨库   → services[].depends_on(via: REST | DB)
+#   - MQ 发布/订阅        → topics[](producers/consumers)
+#   - RPC facade 接口调用 → facades[](owner/called_by)
+# 关系单一来源:服务条目不镜像 produces/consumes/calls,关系只在 topics/facades 维护。
+# AI 处理跨应用需求时先读本文件,图遍历得出影响面。以下为示例,替换为真实服务。
+version: 2
+
 services:
   - id: order-service
     repo: https://github.com/your-org/order-service
     owner: yinn
     description: 订单核心服务
+    boundary: |
+      负责订单生命周期(创建、支付回调、状态流转)。
+      不负责:库存扣减(inventory-service)、履约(fulfillment-service)。
     docs:
-      agents: AGENTS.md              # 路径相对各自仓库根目录
+      agents: AGENTS.md               # 路径相对各自仓库根目录
       architecture: docs/architecture.md
       api: docs/api.md
-    depends_on:                      # 上游依赖(本服务调用谁)
+    depends_on:                       # 仅 REST 直连 / 跨库;RPC 走 facades、MQ 走 topics
       - id: user-service
-        via: REST                    # REST | gRPC | MQ | DB | 其他
+        via: REST
         contract: user-service:docs/api.md
-        status: active               # 可选: active(默认,已生效) | planned(契约定稿未上线)
-        spec: "001"                  # 可选: 引入该依赖的总 spec 编号,用于溯源
+        status: active                # active(默认,已生效)| planned(契约定稿未上线)
+        spec: "001"
 
   - id: user-service
     repo: https://github.com/your-org/user-service
     owner: teammate
     description: 用户与鉴权服务
+    boundary: |
+      负责用户资料、登录鉴权、权限。
+      不负责:订单、支付。
     docs:
       agents: AGENTS.md
       architecture: docs/architecture.md
       api: docs/api.md
     depends_on: []
+
+  - id: inventory-service
+    repo: https://github.com/your-org/inventory-service
+    owner: teammate
+    description: 库存服务
+    boundary: |
+      负责 SKU 库存扣减、回补、库存查询。
+      不负责:订单状态、履约。
+    docs:
+      agents: AGENTS.md
+      architecture: docs/architecture.md
+      api: docs/api.md
+    depends_on: []
+
+  - id: notification-service
+    repo: https://github.com/your-org/notification-service
+    owner: teammate
+    description: 通知服务
+    boundary: |
+      负责站内信、短信、推送的发送。
+      不负责:通知内容的业务判定(由各业务方决定发不发)。
+    docs:
+      agents: AGENTS.md
+      architecture: docs/architecture.md
+      api: docs/api.md
+    depends_on: []
+
+# ── MQ topic:一等实体,天然表达"一产多消"(order.created 被库存与通知同时消费) ──
+topics:
+  - name: order.created
+    owner: order-service              # schema 归属(契约定义方)
+    contract: order-service:docs/events/order-created.md
+    producers: [order-service]
+    consumers: [inventory-service, notification-service]
+    status: active
+    spec: "001"
+
+# ── RPC facade 接口:一等实体(接口级),天然表达"一接口多调用" ──
+facades:
+  - id: user-facade
+    owner: user-service
+    via: Dubbo                        # Dubbo | SOFA | gRPC | Feign
+    contract: user-service:docs/api.md   # 方法签名在契约文档,registry 不重复
+    called_by: [order-service]
+    status: active
+    spec: "001"
