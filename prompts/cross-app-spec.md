@@ -6,10 +6,16 @@
 ## 步骤
 
 1. 定位 hub,按优先级:当前应用仓库根 `.vibe-hub` 文件内容 → `$VIBE_HUB` 环境变量 → 对话上下文 → **询问用户**;不要猜,**禁止为定位 hub 而 clone 任何仓库**(已在 hub 仓库中执行时即当前目录)。
-2. **影响面分析**:读 hub `registry/services.yaml`,根据需求描述与依赖关系推断涉及哪些服务、通过什么方式(REST/gRPC/MQ)关联;把推断结果给用户确认,不确定的服务标注存疑。对于涉及的服务,若 hub `.vibe-paths.local.yaml` 有映射(见 `docs/local-paths.md`),在确认表里标注「本地可直达」。
+2. **影响面分析(图遍历)**:读 hub `registry/services.yaml`(schema v2:services + topics + facades),从需求 NL 定位种子(直接点名或语义命中的 service / topic / facade),沿三类关系扩散:
+   - 种子服务作为某 topic 的 **producer** → 拉该 topic 全部 `consumers`(下游影响面)
+   - 种子服务作为某 topic 的 **consumer** → 标注该 topic 的 `producer`(可能需协调)
+   - 种子服务作为某 facade 的 **called_by** → 拉 facade `owner`(上游接口可能要改);作为 **owner** → 拉全部 `called_by`
+   - 种子本身是 topic/facade → 直接拉其全部关联服务
+   - REST/跨库沿 `depends_on` 扩散
+   把推断结果给用户确认,不确定的标存疑。涉及服务若 hub `.vibe-paths.local.yaml` 有映射(见 `docs/local-paths.md`),标注「本地可直达」。**每个受影响服务据其 `boundary` 与交互角色,给一句「本需求中它要改什么」。**
 3. 在 hub `specs/` 下建 `NNN-需求名/spec.md`(NNN 取现有最大编号 +1,三位数;模板 `specs/_template/spec.md`),重点填写:
    - 需求概述(what/why,不谈实现)
-   - 影响面表(服务、仓库、变更类型;子 spec 列暂留空)
+   - 影响面表(服务、**边界**、**交互方式**、变更类型;子 spec 列暂留空)
    - **契约变更**(先于实现定稿,标注兼容/破坏性)
    - 各服务职责拆分与验收标准
    - 上线顺序(通常先提供方后消费方)
