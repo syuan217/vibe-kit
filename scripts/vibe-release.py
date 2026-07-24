@@ -41,6 +41,7 @@ def find_hub() -> pathlib.Path:
 
 ROOT = find_hub()
 PLUGIN_JSON = ROOT / "plugin" / ".claude-plugin" / "plugin.json"
+ZCODE_PLUGIN_JSON = ROOT / "plugin" / ".zcode-plugin" / "plugin.json"
 MARKETPLACE_JSON = ROOT / ".claude-plugin" / "marketplace.json"
 VERSION_FILE = ROOT / "VERSION"
 CHANGELOG = ROOT / "CHANGELOG.md"
@@ -95,7 +96,8 @@ def cmd_check() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
-    # 1. 版本号四处一致性
+    # 1. 版本号五处一致性(plugin/.claude-plugin/plugin.json、plugin/.zcode-plugin/plugin.json、
+    #    .claude-plugin/marketplace.json 顶层+plugins[0]、VERSION)
     try:
         plugin_v = read_json(PLUGIN_JSON)["version"]
     except (OSError, KeyError, json.JSONDecodeError) as e:
@@ -106,11 +108,22 @@ def cmd_check() -> int:
     except (OSError, json.JSONDecodeError) as e:
         print(f"ERROR: 读 {MARKETPLACE_JSON.relative_to(ROOT)} 失败: {e}")
         return 1
+    # zcode 清单:存在才校验(向后兼容老仓库)
+    zcode_v = None
+    if ZCODE_PLUGIN_JSON.is_file():
+        try:
+            zcode_v = read_json(ZCODE_PLUGIN_JSON).get("version")
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"ERROR: 读 {ZCODE_PLUGIN_JSON.relative_to(ROOT)} 失败: {e}")
+            return 1
+    else:
+        errors.append(f"{ZCODE_PLUGIN_JSON.relative_to(ROOT)} 缺失(zcode 原生清单,必须存在)")
     version_file_v = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.is_file() else None
 
     versions = {
         "VERSION": version_file_v,
-        "plugin.json": plugin_v,
+        "plugin/.claude-plugin/plugin.json": plugin_v,
+        "plugin/.zcode-plugin/plugin.json": zcode_v,
         "marketplace.json (top)": mp.get("version"),
         "marketplace.json (plugins[0])": mp.get("plugins", [{}])[0].get("version") if mp.get("plugins") else None,
     }
@@ -185,18 +198,27 @@ def cmd_check() -> int:
 # ----------------------------- bump 模式 -----------------------------
 
 def update_version_files(new_v: str) -> list[str]:
-    """改 4 处版本号。返回改动文件相对 ROOT 的列表。"""
+    """改 5 处版本号。返回改动文件相对 ROOT 的列表。"""
     changed: list[str] = []
 
     # VERSION
     VERSION_FILE.write_text(new_v + "\n", encoding="utf-8")
     changed.append("VERSION")
 
-    # plugin.json
+    # plugin/.claude-plugin/plugin.json
     pj = read_json(PLUGIN_JSON)
     pj["version"] = new_v
     PLUGIN_JSON.write_text(json.dumps(pj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     changed.append(str(PLUGIN_JSON.relative_to(ROOT)))
+
+    # plugin/.zcode-plugin/plugin.json(zcode 原生清单)
+    if ZCODE_PLUGIN_JSON.is_file():
+        zj = read_json(ZCODE_PLUGIN_JSON)
+        zj["version"] = new_v
+        ZCODE_PLUGIN_JSON.write_text(json.dumps(zj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        changed.append(str(ZCODE_PLUGIN_JSON.relative_to(ROOT)))
+    else:
+        print(f"WARN:  {ZCODE_PLUGIN_JSON.relative_to(ROOT)} 不存在,跳过(请先创建)")
 
     # marketplace.json(两处)
     mp = read_json(MARKETPLACE_JSON)
@@ -408,7 +430,7 @@ def cmd_bump(args: list[str]) -> int:
     print("")
 
     if not auto_yes:
-        print("将执行:1) 改 4 处版本号  2) 修 skill 数量/名册描述  3) 起草/更新 CHANGELOG(调起编辑器)  4) 重打包 .plugin")
+        print("将执行:1) 改 5 处版本号  2) 修 skill 数量/名册描述  3) 起草/更新 CHANGELOG(调起编辑器)  4) 重打包 .plugin")
         ans = input("继续?[y/N] ").strip().lower()
         if ans != "y":
             print("已取消")

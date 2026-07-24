@@ -26,7 +26,7 @@
    - **两处同源**(skill + `prompts/`):cross-app-spec、registry-sync、vibe-init-docs——操作对象是 hub 或一次性执行,应用仓库不放副本。
    - **仅 skill**:vibe-init——由 `scripts/vibe-init.sh` 驱动,逻辑变更须同步改脚本,不出 prompt 副本。
    改任何一处,必须同步同组其余文件;skill 的 references/ 模板与 `plugin/templates/`、`specs/_template/` 中的源模板同理。
-2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json`(两处:顶层 + `plugins[0]`)、`VERSION` 四处版本号同步递增(CI 校验四处一致),`CHANGELOG.md` 加新版本条目,重新打包 .plugin。**先跑 `python3 scripts/vibe-release.py check` 报漂移,再 `bump <新版本>` 半自动处理**(改版本号、同步 skill 名册、起草 CHANGELOG、重打包)。发布 = push + 打 `v*` tag(CI 自动发 Release)。
+2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json`、`plugin/.zcode-plugin/plugin.json`(zcode 原生清单)、`.claude-plugin/marketplace.json`(两处:顶层 + `plugins[0]`)、`VERSION` 五处版本号同步递增(CI 校验五处一致),`CHANGELOG.md` 加新版本条目,重新打包 .plugin。**先跑 `python3 scripts/vibe-release.py check` 报漂移,再 `bump <新版本>` 半自动处理**(改版本号、同步 skill 名册、起草 CHANGELOG、重打包)。发布 = push + 打 `v*` tag(CI 自动发 Release)。
 3. **registry 变更**:改 `registry/services.yaml` 后运行 registry-check 与 registry-graph;规则见 `registry/README.md`。
 4. **文档规范**:遵循 `docs/doc-style.md`;修改模板时保持与 WORKFLOW.md、README.md、`plugin/USAGE.md` 的交叉引用一致。
 5. 团队宪法基线(`plugin/templates/constitution-base.md`)条款变更需团队评审,不得随手改。

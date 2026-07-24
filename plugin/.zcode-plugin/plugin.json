@@ -5,13 +5,7 @@
   "author": {
     "name": "Yinn"
   },
-  "keywords": [
-    "spec-kit",
-    "documentation",
-    "wiki",
-    "workflow",
-    "microservices"
-  ],
   "homepage": "https://github.com/syuan217/vibe-kit",
-  "repository": "https://github.com/syuan217/vibe-kit"
+  "repository": "https://github.com/syuan217/vibe-kit",
+  "skills": "skills"
 }

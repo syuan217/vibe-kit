@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-24
+
+### Added
+
+- **zcode 平台支持**:新增 `plugin/.zcode-plugin/plugin.json` 作为 zcode 原生清单(与 `.claude-plugin/plugin.json` 同源)。zcode 与 Claude Code 共享同一份 skill 内容与 marketplace,安装方式见 `README.md` / `plugin/USAGE.md`。
+
+### Changed
+
+- 版本号同步点从 4 处扩展为 5 处(新增 `plugin/.zcode-plugin/plugin.json`),`scripts/vibe-release.py` 的 check/bump 与 CI `plugin-release.yml` 同步纳入校验。
+- `plugin/skills/vibe-init/SKILL.md` 把 Claude 专有的 `${CLAUDE_PLUGIN_ROOT}` 改为平台无关的指令式描述(「插件根目录 = SKILL.md 向上两级」),读版本号改为兼容 `.zcode-plugin/` 或 `.claude-plugin/` 任一清单。
+- `AGENTS.md` 硬性约定 #2 更新为五处版本号同步;`README.md`、`plugin/USAGE.md` 补 zcode 安装说明,FAQ 把 zcode 从「其他工具用 prompts/」移入「装插件即可」。
+
 ## [0.7.0] - 2026-07-24
 
 ### Changed

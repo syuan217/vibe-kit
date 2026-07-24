@@ -2,7 +2,7 @@
 name: plugin-release
 on:
   pull_request:
-    paths: ["plugin/**", ".claude-plugin/**"]
+    paths: ["plugin/**", ".claude-plugin/**", ".github/workflows/plugin-release.yml"]
   push:
     tags: ["v*"]
 jobs:
@@ -16,10 +16,16 @@ jobs:
           import json, pathlib, re, sys
           m = json.load(open('plugin/.claude-plugin/plugin.json'))
           assert re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', m['name']), 'plugin name must be kebab-case'
+          v = m['version']
+          # zcode 原生清单:必须存在且版本/name 一致
+          zj = json.load(open('plugin/.zcode-plugin/plugin.json'))
+          assert re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', zj['name']), 'zcode plugin name must be kebab-case'
+          assert zj['name'] == m['name'], f'name mismatch: zcode {zj["name"]} vs claude {m["name"]}'
+          assert zj['version'] == v, f'zcode plugin.json version mismatch: {zj["version"]} vs {v}'
+          assert zj.get('skills') == 'skills', f'zcode plugin.json must declare "skills": "skills"'
           mp = json.load(open('.claude-plugin/marketplace.json'))
           assert mp['plugins'], 'marketplace has no plugins'
           version_file = open('VERSION').read().strip()
-          v = m['version']
           assert mp['version'] == v, f'marketplace.json top version mismatch: {mp["version"]} vs plugin.json {v}'
           assert mp['plugins'][0]['version'] == v, f'marketplace.json plugins[0] version mismatch: {mp["plugins"][0]["version"]} vs plugin.json {v}'
           assert version_file == v, f'VERSION file mismatch: {version_file} vs plugin.json {v}'
