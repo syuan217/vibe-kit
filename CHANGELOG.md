@@ -6,6 +6,20 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-24
+
+### Changed
+
+- **registry schema v1 → v2(破坏性)**:`depends_on.via` 收窄为 `REST`/`DB`;MQ 关系迁移到 `topics[]`(producers/consumers)、RPC facade 迁移到 `facades[]`(owner/called_by);服务新增 `boundary` 字段。关系单一来源,服务条目不再镜像 produces/consumes/calls。
+- cross-app-spec 影响面分析升级为图遍历(沿 topics/facades/depends_on 扩散),总 spec 影响面表新增「边界」「交互方式」列。
+- registry-sync 扫描按 topics/facades/depends_on 三类归位,新增对外接口时提醒复核 `boundary`;finalize-feature 同步该提醒。
+- registry-check / registry-graph 支持 topics/facades(图渲染六边形 topic、平行四边形 facade);新增 `tests/` 脚本测试并接入 CI。
+- `registry/README.md`、`WORKFLOW.md` §2.2、`plugin/USAGE.md` 同步 v2 三类关系模型。
+
+### 迁移指引
+
+- 已有 registry:`version: 1 → 2`;把 `via: gRPC/Dubbo/SOFA` 的 depends_on 改写为 `facades[]` 条目、`via: MQ` 改写为 `topics[]` 条目;给各服务补 `boundary`。跑 `python3 scripts/registry-check.py` 校验。
+
 ## [0.6.0] - 2026-07-21
 
 > **升级指南**:按身份(Claude 插件用户 / 已接入应用仓库 / hub 维护者)见 `plugin/USAGE.md` FAQ「从 0.5.0 升级到 0.6.0?」。
