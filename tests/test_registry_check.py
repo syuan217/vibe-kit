@@ -68,6 +68,7 @@ def test_facade_via_must_be_valid(make_hub):
     r = run_check(make_hub(reg))
     assert r.returncode == 1
     assert "via" in r.stdout
+    assert "user-facade" in r.stdout
 
 
 def test_depends_on_via_narrowed_to_rest_db(make_hub):
@@ -76,6 +77,7 @@ def test_depends_on_via_narrowed_to_rest_db(make_hub):
     r = run_check(make_hub(reg))
     assert r.returncode == 1
     assert "via" in r.stdout
+    assert "order-service" in r.stdout
 
 
 def test_duplicate_topic_name(make_hub):
@@ -90,4 +92,5 @@ def test_service_mirror_field_warns(make_hub):
     reg = _valid_v2()
     reg["services"][0]["produces"] = ["order.created"]
     r = run_check(make_hub(reg))
+    assert r.returncode == 0
     assert "produces" in r.stdout  # 提示不要在服务条目镜像关系

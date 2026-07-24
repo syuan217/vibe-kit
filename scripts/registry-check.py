@@ -143,6 +143,8 @@ def main() -> int:
     # 孤立服务提示(连接性:depends_on / 被依赖 / 参与 topic / 参与 facade)
     connected = set(consumed)
     for t in topics:
+        if t.get("owner"):
+            connected.add(t["owner"])
         connected.update(t.get("producers") or [])
         connected.update(t.get("consumers") or [])
     for f in facades:
