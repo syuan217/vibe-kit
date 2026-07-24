@@ -10,9 +10,10 @@
 
 ## 2. 影响面
 
-| 服务 | 仓库 | 变更类型 | 子 spec |
-|---|---|---|---|
-| order-service | <url> | 接口新增 | <repo>/specs/NNN-xxx/spec.md |
+| 服务 | 边界 | 交互方式 | 变更类型 | 子 spec |
+|---|---|---|---|---|
+| order-service | 订单生命周期(不含库存) | produces order.created | 事件加字段 | <repo>/specs/NNN-xxx/spec.md |
+| inventory-service | SKU 库存扣减 | consumes order.created | 新增消费逻辑 | <repo>/specs/NNN-xxx/spec.md |
 
 ## 3. 契约变更(先于实现定稿)
 

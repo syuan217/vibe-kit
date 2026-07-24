@@ -4,7 +4,19 @@
 
 > 前置依赖:校验与依赖图脚本需要 PyYAML——`pip install pyyaml`。
 
-## 字段说明
+## schema v2:三类关系
+
+registry 用三类关系描述系统,**各有归处、关系单一来源**(同一关系不存两处):
+
+| 关系 | 归处 | 形状 |
+|---|---|---|
+| REST 直连 / 跨库访问 | `services[].depends_on` | 有向点对点,`via: REST` 或 `DB` |
+| MQ 发布/订阅 | `topics[]` | `producers[]` → topic → `consumers[]`,天然一产多消 |
+| RPC facade 接口调用 | `facades[]` | `called_by[]` → facade → `owner`,天然一接口多调用 |
+
+**服务条目不镜像 `produces/consumes/calls`**——要看某服务收发什么,遍历 topics/facades 即可(`registry-graph.py` 会渲染)。RPC/MQ 一律不进 `depends_on`。
+
+### services[] 字段
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
@@ -12,12 +24,31 @@
 | repo | ✅ | 仓库地址 |
 | owner | ✅ | 负责人(registry 变更需其评审) |
 | description | ✅ | 一句话职责 |
+| boundary | 建议 | 服务边界:负责什么 / **不**负责什么。需求分析据此输出各服务边界。人工维护,代码推不出 |
 | docs | ✅ | 文档指针(agents/architecture/api,相对仓库根) |
-| depends_on | ✅(可为 []) | 上游依赖:id + via(REST/gRPC/MQ/DB/其他)+ contract 指针 |
-| depends_on[].status | 可选 | `active`(默认,已生效)/ `planned`(契约定稿、尚未上线)——显式表达 hub 超前于应用的中间态 |
-| depends_on[].spec | 可选 | 引入该依赖的总 spec 编号,溯源用 |
+| depends_on | ✅(可为 []) | **仅** REST 直连 / 跨库:id + via(`REST`\|`DB`)+ contract + 可选 status/spec |
 
-只声明 `depends_on`(我调用谁);"谁调用我"由脚本从全表反推,**不要手工维护 consumers**,避免双向声明打架。
+### topics[] 字段
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| name | ✅ | topic 名(如 `order.created`),全局唯一 |
+| owner | ✅ | schema 归属服务(契约定义方) |
+| contract | 建议 | 事件 schema 文档指针 |
+| producers | ✅(≥1) | 生产该 topic 的服务(可多个) |
+| consumers | ✅(可为 []) | 消费该 topic 的服务(可多个) |
+| status / spec | 可选 | `active`\|`planned`;引入该 topic 的总 spec 编号 |
+
+### facades[] 字段
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| id | ✅ | facade 接口标识,kebab-case,全局唯一 |
+| owner | ✅ | 提供该接口的服务 |
+| via | ✅ | `Dubbo`\|`SOFA`\|`gRPC`\|`Feign` |
+| contract | 建议 | 方法签名文档指针(registry 不抄方法) |
+| called_by | ✅(可为 []) | 调用该接口的服务(可多个) |
+| status / spec | 可选 | 同上 |
 
 ## 三个维护时机(声明式更新)
 
@@ -29,13 +60,14 @@
 
 `scripts/registry-check.py` 在每次 PR 时由 CI 运行(也可本地跑):
 
-- 结构:yaml 合法、必填字段齐全、id 唯一且 kebab-case、via 取值合法
-- 引用:depends_on 指向的服务必须已登记(未登记 → 报错,这是发现"漏登记"的主要手段)
-- 提示:孤立服务(无依赖也无消费方)、依赖图 service-graph.md 是否过期
+- 结构:yaml 合法、必填字段齐全、id 唯一且 kebab-case、depends_on via 仅 REST/DB、facade via 合法、status 合法
+- 引用:depends_on / topic producers·consumers / facade owner·called_by 指向的服务必须已登记(未登记 → 报错)
+- 完整性:每个 topic ≥1 producer、每个 facade 有 owner;topic name / facade id 全局唯一
+- 提示:服务条目误写 produces/consumes/consumers/calls、孤立服务、依赖图 service-graph.md 是否过期
 
 ## 定期校准(从代码反推)
 
-声明可能撒谎,代码不会。用 **registry-sync**(插件 skill 或 `prompts/registry-sync.md`)在应用仓库扫描真实调用——RPC 注解(Feign/Dubbo/SOFA 及 XML 配置)、构建坐标(其他服务的 api/client 包引用)、HTTP client、gRPC stub、MQ 生产消费——与 registry 声明对比,报告缺失/多余/方式不符的依赖。**注解与坐标得出的关系是推测,必须经人逐项确认(附证据)后才写入 registry**,注意"仅引用 DTO 未实际调用"的假阳性。建议:每次大需求后、或每月对全部服务跑一轮。
+声明可能撒谎,代码不会。用 **registry-sync** 在应用仓库扫描真实调用——RPC facade(Feign/Dubbo/SOFA 提供方与消费方注解及 XML)映射到 `facades[]`、MQ 生产/消费(`@RocketMQMessageListener`/`@KafkaListener`/`rocketMQTemplate`/`kafkaTemplate`)映射到 `topics[]`、REST/跨库映射到 `depends_on`——与 registry 声明对比,报告缺失/多余/方式不符。**注解与坐标得出的关系是推测,必须经人逐项确认(附证据)后才写入 registry**,注意"仅引用 DTO 未实际调用"的假阳性。建议:每次大需求后、或每月对全部服务跑一轮。
 
 ## 与应用文档的对应关系
 
