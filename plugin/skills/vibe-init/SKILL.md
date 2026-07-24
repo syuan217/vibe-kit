@@ -5,7 +5,7 @@ description: Initializes the vibe-kit spec-driven workflow in an application rep
 
 # vibe-init — 应用仓库接入 vibe-kit 工作流
 
-所需模板已随插件分发,位于 `${CLAUDE_PLUGIN_ROOT}/templates/`。**本 skill 不需要 clone 任何仓库;禁止为获取模板或定位 hub 而 clone 仓库。**
+所需模板已随插件分发,位于**插件根目录**下的 `templates/`。插件根目录 = 本 SKILL.md 所在路径向上两级(`skills/<name>/SKILL.md` → 上两级即 `plugin/`,含 `templates/` 与 `plugin.json` 清单)。**本 skill 不需要 clone 任何仓库;禁止为获取模板或定位 hub 而 clone 仓库。**
 
 ## 前置确认
 
@@ -22,13 +22,13 @@ description: Initializes the vibe-kit spec-driven workflow in an application rep
 
 1. spec-kit 初始化,每个 agent 各跑一次(integrations 询问用户或默认 claude,cursor,codex):
    `specify init . --force --integration <agent> --ignore-agent-tools`
-2. 拷贝应用模板(不覆盖已有文件):`cp -Rn "${CLAUDE_PLUGIN_ROOT}/templates/app/." .`,然后 `rm -f ./gitignore`(该模板按第 5 步合并进 `.gitignore`,不落地为裸文件)。
-3. 若 `.specify/memory/constitution.md` 不存在或无有效内容(无"工程宪法"字样),拷入 `${CLAUDE_PLUGIN_ROOT}/templates/constitution-base.md`。
+2. 拷贝应用模板(不覆盖已有文件):`cp -Rn "<插件根目录>/templates/app/." .`,然后 `rm -f ./gitignore`(该模板按第 5 步合并进 `.gitignore`,不落地为裸文件)。
+3. 若 `.specify/memory/constitution.md` 不存在或无有效内容(无"工程宪法"字样),拷入 `<插件根目录>/templates/constitution-base.md`。
 4. 写本地标记文件(均已被 gitignore 忽略):
-   - `.vibe-kit-version` ← 插件版本(读 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 的 version)
+   - `.vibe-kit-version` ← 插件版本(读插件根目录下任一存在的清单:`.zcode-plugin/plugin.json` 或 `.claude-plugin/plugin.json`,取其 `version` 字段)
    - `docs/.sync-commit` ← `git rev-parse HEAD`(文档一致性基线)
    - `.vibe-hub` ← hub 绝对路径(前置第 2 步确定;跳过 hub 时不写)
-5. 合并 gitignore:把 `${CLAUDE_PLUGIN_ROOT}/templates/app/gitignore` 中的条目逐行去重追加到应用仓库 `.gitignore`(已有条目不动)。
+5. 合并 gitignore:把 `<插件根目录>/templates/app/gitignore` 中的条目逐行去重追加到应用仓库 `.gitignore`(已有条目不动)。
 
 ## 收尾(必做)
 

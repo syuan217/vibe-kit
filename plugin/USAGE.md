@@ -6,10 +6,10 @@
 
 vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调"的能力封装为 7 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
 
-模板与团队宪法**随插件分发**(位于插件内 `templates/`),安装即可用,无需 clone vibe-kit 仓库。插件与两方协作:
+模板与团队宪法**随插件分发**(位于插件内 `templates/`),安装即可用,无需 clone vibe-kit 仓库。插件同时支持 **Claude Code** 与 **zcode**(两平台 skill 格式兼容,同一份 `plugin/` 分发)。插件与两方协作:
 
 ```
-vibe-kit 插件(装在 Claude 里,自带模板/宪法)
+vibe-kit 插件(装在 Claude / zcode 里,自带模板/宪法)
     │ 读 registry/总 spec         │ 生成/维护文档
     ▼                            ▼
 hub 仓库(团队协调,可选)      应用仓库(你的服务)
@@ -18,14 +18,16 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 
 ## 二、安装与前置条件
 
-安装(推荐,从 GitHub):
+**Claude Code / Cowork**(从 GitHub 安装):
 
 ```
 /plugin marketplace add syuan217/vibe-kit
 /plugin install vibe-kit@vibe-kit
 ```
 
-或离线方式:将 `vibe-kit.plugin` 文件拖入 Cowork 会话点击安装(文件可在 GitHub Release 下载)。
+**zcode**(Settings → Plugin Management → Discover,点 `+` 添加本仓库 GitHub 地址 `syuan217/vibe-kit` 作为 marketplace,然后安装 vibe-kit 插件)。
+
+或**离线方式**(两平台通用):将 `vibe-kit.plugin` 文件拖入会话点击安装(文件可在 GitHub Release 下载)。
 
 前置条件:
 
@@ -133,9 +135,10 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 ## 六、FAQ
 
 - **skill 没有自动触发?** 直接说 skill 名即可,如"用 sync-docs 检查一下"。
-- **Cursor / Codex 同事怎么办?** 插件仅服务 Claude 用户;其他工具用户使用应用仓库内 `prompts/*.md`(内容与插件同源),效果一致。
+- **zcode / Claude 都支持吗?** 支持。插件根目录同时携带 `.zcode-plugin/plugin.json` 与 `.claude-plugin/plugin.json` 两份清单,skill 内容同一份。zcode 用户按 §二安装即可,与 Claude 用户体验一致。
+- **Cursor / Codex 同事怎么办?** 这两个工具暂无插件市场;其用户使用应用仓库内 `prompts/*.md`(内容与插件同源),效果一致。
 - **插件和 hub 里的 prompts 改了一边怎么办?** 二者同源,修改工作流时须同步更新 `plugin/skills/` 与 `prompts/`、`plugin/templates/`,然后重新打包分发 `.plugin`。
-- **升级插件?** hub 仓库 `plugin/` 目录改完、`plugin.json` 与 `.claude-plugin/marketplace.json` 版本号同步递增、推送 GitHub 并打 tag(CI 自动发 Release);团队执行 `/plugin marketplace update vibe-kit` 后重装即可。
+- **升级插件?** hub 仓库 `plugin/` 目录改完、`plugin.json`(Claude `.claude-plugin/` + zcode `.zcode-plugin/` 两处)与 `.claude-plugin/marketplace.json` 版本号同步递增、推送 GitHub 并打 tag(CI 自动发 Release);团队执行 `/plugin marketplace update vibe-kit`(Claude)或在 zcode Discover 刷新后重装即可。
 - **从 0.4.x 升级到 0.5.0?** 0.5.0 起 `docs/.sync-commit`、`.vibe-hub`、`.vibe-kit-version` 改为本地文件不入库。已接入的应用仓库升级后执行一次:
 
   ```bash

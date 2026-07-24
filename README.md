@@ -2,16 +2,22 @@
 
 多仓库微服务团队的 spec-driven AI 开发工作流中心仓库(hub)。方案详见 **WORKFLOW.md**。
 
-## 安装插件(Claude Code / Cowork)
+## 安装插件(Claude Code / zcode / Cowork)
 
-本仓库同时是插件市场(`.claude-plugin/marketplace.json`),推送到 GitHub 后即可直接安装:
+本仓库同时是插件市场(`.claude-plugin/marketplace.json`),推送到 GitHub 后即可直接安装。插件根目录携带 `.zcode-plugin/plugin.json` 与 `.claude-plugin/plugin.json` 两份清单,**Claude Code 与 zcode 都支持**,skill 内容同一份。
+
+**Claude Code / Cowork**:
 
 ```
 /plugin marketplace add syuan217/vibe-kit
 /plugin install vibe-kit@vibe-kit
 ```
 
-插件更新后执行 `/plugin marketplace update vibe-kit` 刷新。不用 Claude 的同事无需安装,使用应用仓库内 `prompts/*.md`(内容同源)。插件说明见 `plugin/USAGE.md`。
+**zcode**:Settings → Plugin Management → Discover,点 `+` 添加 GitHub 地址 `syuan217/vibe-kit`,然后安装 vibe-kit。
+
+或**离线方式**(两平台通用):从 GitHub Release 下载 `vibe-kit.plugin`,拖入会话安装。
+
+插件更新后:Claude 执行 `/plugin marketplace update vibe-kit` 刷新;zcode 在 Discover 刷新后重装。不用 Claude / zcode 的同事(如 Cursor、Codex 用户)无需安装,使用应用仓库内 `prompts/*.md`(内容同源)。插件说明见 `plugin/USAGE.md`。
 
 ## 目录
 
