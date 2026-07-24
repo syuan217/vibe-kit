@@ -11,6 +11,7 @@ def test_graph_renders_topic_and_facade(make_hub):
     assert "order_service" in out
     # topic 节点(hexagon)与产/消边
     assert "order.created" in out
+    assert "t_order_created" in out   # 锁定 topic 节点 id 的 dot→underscore 处理
     assert "produces" in out
     assert "consumes" in out
     # facade 节点与调用边
