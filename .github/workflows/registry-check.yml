@@ -2,7 +2,7 @@
 name: registry-check
 on:
   pull_request:
-    paths: ["registry/**", "scripts/registry-*.py"]
+    paths: ["registry/**", "scripts/registry-*.py", "tests/**"]
   push:
     branches: [main]
     paths: ["registry/**"]
@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: pip install pyyaml
+      - name: Install test deps
+        run: pip install pyyaml pytest
+      - name: Run script tests
+        run: python3 -m pytest tests/ -v
       - name: Validate registry
         run: python3 scripts/registry-check.py
   regen-graph:
