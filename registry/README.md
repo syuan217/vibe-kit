@@ -63,7 +63,7 @@ registry 用三类关系描述系统,**各有归处、关系单一来源**(同�
 - 结构:yaml 合法、必填字段齐全、id 唯一且 kebab-case、depends_on via 仅 REST/DB、facade via 合法、status 合法
 - 引用:depends_on / topic producers·consumers / facade owner·called_by 指向的服务必须已登记(未登记 → 报错)
 - 完整性:每个 topic ≥1 producer、每个 facade 有 owner;topic name / facade id 全局唯一
-- 提示:服务条目误写 produces/consumes/calls、孤立服务、依赖图 service-graph.md 是否过期
+- 提示:服务条目误写 produces/consumes/consumers/calls、孤立服务、依赖图 service-graph.md 是否过期
 
 ## 定期校准(从代码反推)
 

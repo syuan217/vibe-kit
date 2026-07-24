@@ -5,7 +5,7 @@ on:
     paths: ["registry/**", "scripts/registry-*.py", "tests/**"]
   push:
     branches: [main]
-    paths: ["registry/**"]
+    paths: ["registry/**", "scripts/registry-*.py", "tests/**"]
 jobs:
   check:
     runs-on: ubuntu-latest

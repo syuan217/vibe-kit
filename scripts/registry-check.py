@@ -41,7 +41,7 @@ VALID_VIA = {"REST", "DB"}                      # depends_on 收窄:facade/MQ �
 VALID_FACADE_VIA = {"Dubbo", "SOFA", "gRPC", "Feign"}
 VALID_STATUS = {"active", "planned"}
 REQUIRED = ["id", "repo", "owner", "description", "docs"]
-MIRROR_FIELDS = ("produces", "consumes", "calls")  # 关系单一来源:不应出现在服务条目
+MIRROR_FIELDS = ("produces", "consumes", "consumers", "calls")  # 关系单一来源:不应出现在服务条目
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -90,8 +90,6 @@ def main() -> int:
             if mf in s:
                 warnings.append(
                     f"{sid}: {mf} 请勿写在服务条目(关系单一来源,在 topics/facades 维护),建议删除")
-        if "consumers" in s:
-            warnings.append(f"{sid}: consumers 请勿手工维护,建议删除该字段")
 
     topics = reg.get("topics") or []
     facades = reg.get("facades") or []
