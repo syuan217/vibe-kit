@@ -34,4 +34,4 @@ description: Initializes the vibe-kit spec-driven workflow in an application rep
 
 1. 存量仓库:建议立即运行 vibe-init-docs skill 从代码生成真实文档;新仓库则引导用户填写 AGENTS.md 占位符。
 2. 若已配置 hub:提醒用户在 hub `registry/services.yaml` 登记本服务(id、repo、owner、依赖),并重新生成依赖图:`python3 <hub>/scripts/registry-graph.py`。未配置 hub 则提醒之后补办。
-3. 提醒将 AGENTS.md、docs/、prompts/ 提交入库;`.specify/`、`specs/`、各 agent 命令目录、`.vibe-hub` 等已被 `.gitignore` 忽略,属本地生成物,队友各自跑 vibe-init 即可重建。
+3. 提醒将 AGENTS.md、docs/、prompts/ 提交入库;`.specify/`、`specs/`、各 agent 命令目录、`.vibe-hub` 等已被 `.gitignore` 忽略,属本地生成物与过程产物,队友各自跑 vibe-init 即可重建(需求结论的长期真相在 docs/,由 finalize-feature 沉淀)。

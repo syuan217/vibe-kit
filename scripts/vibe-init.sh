@@ -74,8 +74,11 @@ echo "$HUB_ABS" > .vibe-hub
 
 # 5. 合并 gitignore 模板(逐行去重追加,不动用户已有条目)
 touch .gitignore
+# 重跑时不再追加注释:注释按行去重会脱离它描述的条目、糊在文件末尾
+has_block=0; grep -qF '# ===== vibe-kit' .gitignore && has_block=1
 while IFS= read -r line || [ -n "$line" ]; do
   [[ -z "$line" ]] && continue
+  [[ "$line" == \#* && $has_block -eq 1 ]] && continue
   grep -qxF "$line" .gitignore || echo "$line" >> .gitignore
 done < "$TPL_DIR/app/gitignore"
 echo ">> 已合并 .gitignore(本地配置与过程产物不入库)"

@@ -14,7 +14,7 @@ description: Reverse-engineers a full documentation set (AGENTS.md, docs/archite
    - AGENTS.md(≤150 行,保留模板章节结构)
    - docs/architecture.md(模块、依赖、数据流、数据模型)
    - docs/api.md(扫描路由/controller/proto/consumer 得出**真实**对外契约)
-   - docs/wiki/(调用 rebuild-wiki skill 生成 code-map 与模块页)
+   - docs/wiki/(按 rebuild-wiki 流程生成 code-map 与模块页)
 3. 原则:
    - 只写从代码可证实的内容;推测处标 `TODO(待确认)` 并在最后汇总,由维护者确认
    - 发现的问题(未使用模块、疑似废弃接口)单独列出,不写入文档正文

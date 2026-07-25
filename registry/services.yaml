@@ -1,11 +1,12 @@
-# 服务注册表 — 全系统唯一权威的服务清单与关系(schema v2)
-# 三类关系各有归处:
-#   - REST 直连 / 跨库   → services[].depends_on(via: REST | DB)
-#   - MQ 发布/订阅        → topics[](producers/consumers)
-#   - RPC facade 接口调用 → facades[](owner/called_by)
-# 关系单一来源:服务条目不镜像 produces/consumes/calls,关系只在 topics/facades 维护。
-# AI 处理跨应用需求时先读本文件,图遍历得出影响面。以下为示例,替换为真实服务。
-version: 2
+# 服务注册表 — 全系统唯一权威的服务清单与关系(schema v3)
+# 两类关系各有归处:
+#   - 点对点调用(REST / RPC / 跨库) → services[].depends_on(via 记具体方式)
+#   - MQ 发布/订阅                   → topics[](producers/consumers)
+# 关系单一来源:服务条目不镜像 produces/consumes,MQ 关系只在 topics[] 维护。
+# 粒度是**服务级**:只记"谁依赖谁、用什么方式",不记具体接口——接口在实施阶段读代码发现。
+# AI 处理跨应用需求时先读本文件,图遍历得出影响面;各服务要做什么看 boundary。
+# 以下为示例,替换为真实服务。
+version: 3
 
 services:
   - id: order-service
@@ -19,10 +20,10 @@ services:
       agents: AGENTS.md               # 路径相对各自仓库根目录
       architecture: docs/architecture.md
       api: docs/api.md
-    depends_on:                       # 仅 REST 直连 / 跨库;RPC 走 facades、MQ 走 topics
+    depends_on:                       # 点对点调用;MQ 关系走 topics[]
       - id: user-service
-        via: REST
-        contract: user-service:docs/api.md
+        via: Dubbo                    # REST | DB | Dubbo | SOFA | gRPC | Feign
+        contract: user-service:docs/api.md   # 指到对端契约文档,不抄接口签名
         status: active                # active(默认,已生效)| planned(契约定稿未上线)
         spec: "001"
 
@@ -72,15 +73,5 @@ topics:
     contract: order-service:docs/events/order-created.md
     producers: [order-service]
     consumers: [inventory-service, notification-service]
-    status: active
-    spec: "001"
-
-# ── RPC facade 接口:一等实体(接口级),天然表达"一接口多调用" ──
-facades:
-  - id: user-facade
-    owner: user-service
-    via: Dubbo                        # Dubbo | SOFA | gRPC | Feign
-    contract: user-service:docs/api.md   # 方法签名在契约文档,registry 不重复
-    called_by: [order-service]
     status: active
     spec: "001"

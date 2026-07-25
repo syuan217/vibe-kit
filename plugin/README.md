@@ -18,11 +18,11 @@
 
 ## 说明
 
-- **hub 依赖**:vibe-init 与 cross-app-spec 需要本地有 vibe-kit hub 仓库(模板、宪法、registry 的唯一权威来源);其余 skills 可独立工作。
-- **跨工具策略**:本插件服务 Claude Code / Cowork 用户;Cursor、Codex 同事继续使用各应用仓库内 `prompts/*.md`(内容同源)。修改工作流时,`plugin/skills/` 与 `prompts/`、`plugin/templates/` 需同步更新。
+- **hub 依赖**:模板与宪法随插件分发,无需 clone hub;hub 只存 registry 与总 spec。cross-app-spec 需要 hub;vibe-init 无 hub 也可先接入(之后补登记);其余 skills 可独立工作。
+- **跨工具策略**:本插件服务 Claude Code / zcode / Cowork 用户;Cursor、Codex 同事继续使用各应用仓库内 `prompts/*.md`(内容同源)。修改工作流只改 `plugin/skills/`(唯一源),`prompts/` 与应用模板副本由 `scripts/sync-prompts.py --write` 生成(CI `--check` 防漂移)。
 - 前置:spec-kit CLI(`specify`),vibe-init 会检查并给出安装命令。
 
 ## 安装
 
-从 GitHub(推荐):`/plugin marketplace add syuan217/vibe-kit`,然后 `/plugin install vibe-kit@vibe-kit`。
-或将 GitHub Release 中的 `vibe-kit.plugin` 文件拖入 Cowork 会话点击安装。
+从 GitHub(推荐):`/plugin marketplace add syuan217/vibe-kit`,然后 `/plugin install vibe-kit@vibe-kit`;zcode 在 Settings → Plugin Management → Discover 添加同一 GitHub 地址后安装。
+或将 GitHub Release 中的 `vibe-kit.plugin` 文件拖入会话安装(两平台通用)。

@@ -20,12 +20,27 @@ import sys
 from datetime import date
 
 
+SUBCOMMANDS = ("check", "bump")
+
+
+def hub_arg() -> str | None:
+    """命令行首参若「非 flag + 非子命令 + 是已存在的目录」,才当作可选的 hub 目录参数。
+
+    必须要求是目录:否则拼错的子命令(`chek`)会被当成 hub 路径吃掉,变成静默成功。
+    find_hub 与 main 共用本判定,保证「被当作 hub 的」和「被剥离的」永远是同一个参数。
+    """
+    if len(sys.argv) > 1:
+        a = sys.argv[1]
+        if not a.startswith("-") and a not in SUBCOMMANDS and pathlib.Path(a).is_dir():
+            return a
+    return None
+
+
 def find_hub() -> pathlib.Path:
     """脚本可随插件分发,定位 hub(含 registry/services.yaml)。"""
     candidates: list[pathlib.Path] = []
-    # 命令行第一个非 flag 参数若不是子命令且是目录,则视为 hub 目录
-    if len(sys.argv) > 1 and not sys.argv[1].startswith("-") and sys.argv[1] not in {"check", "bump"}:
-        candidates.append(pathlib.Path(sys.argv[1]))
+    if (a := hub_arg()) is not None:
+        candidates.append(pathlib.Path(a))
     if os.environ.get("VIBE_HUB"):
         candidates.append(pathlib.Path(os.environ["VIBE_HUB"]))
     candidates.append(pathlib.Path.cwd())
@@ -134,7 +149,7 @@ def cmd_check() -> int:
             errors.append(f"{k} 版本号格式不合规: {v}(需 X.Y.Z)")
     unique = {v for v in versions.values() if v}
     if len(unique) > 1:
-        errors.append(f"版本号不一致: {versions}(应四处相同)")
+        errors.append(f"版本号不一致: {versions}(应五处相同)")
 
     # 2. skill 数量/名册
     actual = actual_skill_ids()
@@ -183,6 +198,40 @@ def cmd_check() -> int:
             warnings.append(
                 f"CHANGELOG 最新版本是 {m.group(1)} 但 plugin.json 是 {plugin_v}"
                 f"(bump 时未更新 CHANGELOG?)"
+            )
+
+    # 4. 插件清单与 skill 结构(CI 的唯一校验入口,本地可跑出同样结果)
+    if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", str(plugin_name := read_json(PLUGIN_JSON).get("name", ""))):
+        errors.append(f"plugin.json name 需 kebab-case: {plugin_name!r}")
+    if ZCODE_PLUGIN_JSON.is_file():
+        zj = read_json(ZCODE_PLUGIN_JSON)
+        if zj.get("name") != plugin_name:
+            errors.append(f"zcode 与 claude 清单 name 不一致: {zj.get('name')!r} vs {plugin_name!r}")
+        if zj.get("skills") != "skills":
+            errors.append('zcode plugin.json 必须声明 "skills": "skills"(zcode 据此发现 skills 目录)')
+    for d in sorted(SKILLS_DIR.iterdir()) if SKILLS_DIR.is_dir() else []:
+        if not d.is_dir():
+            continue
+        skill_md = d / "SKILL.md"
+        if not skill_md.is_file():
+            errors.append(f"{d.name}: 缺少 SKILL.md")
+            continue
+        text = skill_md.read_text(encoding="utf-8")
+        fm = re.match(r"\A---\n(.*?)\n---\n", text, re.S)
+        if not fm:
+            errors.append(f"{d.name}: SKILL.md 缺少 YAML frontmatter")
+            continue
+        fields = dict(re.findall(r"^(name|description):\s*(.+)$", fm.group(1), re.MULTILINE))
+        for key in ("name", "description"):
+            if not fields.get(key, "").strip():
+                errors.append(f"{d.name}: SKILL.md frontmatter 缺 {key}")
+        if (fm_name := fields.get("name", "").strip()) and fm_name != d.name:
+            errors.append(f"{d.name}: frontmatter name 为 {fm_name!r},与目录名不一致")
+        # SKILL.md 正文是渠道中立的(只写执行时路径),引用不到插件内的随附文件 —— 有就是死文件
+        if extra := sorted(p.name for p in d.iterdir() if p.name != "SKILL.md"):
+            warnings.append(
+                f"{d.name}: 除 SKILL.md 外还有 {extra}(skill 正文渠道中立、引用不到它们;"
+                f"模板请放 plugin/templates/ 或 specs/_template/)"
             )
 
     # 输出
@@ -481,13 +530,19 @@ def main() -> int:
     if not args:
         print(__doc__)
         return 0
+    # 剥离可选的 hub 目录参数(判定与 find_hub 共用 hub_arg,不会与拼错的子命令混淆)
+    if hub_arg() is not None:
+        args = args[1:]
+        if not args:
+            print(__doc__)
+            return 0
     cmd = args[0]
     rest = args[1:]
     if cmd == "check":
         return cmd_check()
     if cmd == "bump":
         return cmd_bump(rest)
-    print(f"未知子命令: {cmd}(可用: check / bump)")
+    print(f"未知子命令: {cmd}(可用: {' / '.join(SUBCOMMANDS)})")
     return 1
 
 

@@ -25,6 +25,7 @@
 AGENTS.md                    # 本仓库自身的 AI 上下文入口(修改本仓库前必读)
 WORKFLOW.md                  # 工作流方案(先读这个)
 VERSION                      # kit 版本
+CHANGELOG.md                 # 版本变更记录(发版时由 vibe-release.py 维护)
 registry/services.yaml       # 服务注册表:全系统服务清单、依赖关系、文档指针
 registry/README.md           # registry 维护规范(更新时机、校验、校准)
 specs/                       # 跨应用需求总 spec(_template/ 为模板)
@@ -33,7 +34,8 @@ docs/requirement-playbook.md # 需求处理手册:一个需求下来时怎么做
 plugin/templates/
   constitution-base.md       # 团队工程宪法基线(bootstrap 时注入应用仓库)
   app/                       # 应用仓库脚手架(AGENTS.md、README、docs、ADR、CI、PR 模板等)
-prompts/
+prompts/                     # 与 plugin/skills 同源,由 sync-prompts.py 生成(勿手改)
+  cross-app-spec.md          # 跨应用需求总 spec(影响面分析 + 契约先行)
   vibe-init-docs.md          # 存量仓库从代码反向生成整套文档(初始)
   rebuild-wiki.md            # 从代码生成 wiki 定位层(code-map + 模块页)
   finalize-feature.md        # 需求完成后把 spec 结论沉淀进 docs/(收尾)
@@ -44,7 +46,11 @@ scripts/
   init-hub.sh                # 创建与 kit 分离的独立 hub 目录/仓库
   registry-graph.py          # 从 registry 生成 mermaid 服务依赖图
   registry-check.py          # registry 结构与引用校验(CI/本地)
-plugin/                      # Claude 插件源码(7 个 skills,打包为 vibe-kit.plugin 分发)
+  vibe-paths.py              # 服务仓库本地路径映射(list/add/check/resolve)
+  vibe-release.py            # 发版校验与半自动 bump(check/bump)
+  sync-prompts.py            # 从 SKILL.md 生成 prompts/ 同源副本(--write/--check)
+tests/                       # pytest:registry/vibe-paths 脚本 + prompt 同源
+plugin/                      # Claude/zcode 插件源码(7 个 skills,打包为 vibe-kit.plugin 分发)
 ```
 
 ## 快速开始
@@ -68,3 +74,7 @@ plugin/                      # Claude 插件源码(7 个 skills,打包为 vibe-k
 5. 用一个真实需求走流程:`/speckit.specify → clarify → plan → tasks → implement`。
 
 跨应用需求:先在本仓库 `specs/` 复制 `_template/` 立总 spec,再到各应用仓库走上述流程(见 `specs/README.md`)。
+
+## License
+
+[MIT](LICENSE)

@@ -57,16 +57,17 @@ hub(registry + 跨应用 specs + 公共 docs)与 kit(模板/脚本/插件)职责
 - `AGENTS.md` 是跨工具开放标准(Linux 基金会 Agentic AI Foundation 托管),Cursor、Codex、Copilot、Windsurf 等 30+ 工具原生读取,Claude Code 现在也直接读取。**只维护这一份**,模板中保留一行式 `CLAUDE.md`(`@AGENTS.md`)仅为兼容旧版 Claude Code。
 - AGENTS.md 保持精简(≤150 行):概览、技术栈、命令、约定、文档地图。深度内容放 `docs/`,AI 按需读取——这比一个巨型文件对所有工具都更有效。
 - 文档分三层:**AGENTS.md**(入口层)→ **docs/**(结构层:architecture/api/decisions)→ **docs/wiki/**(定位层:code-map 功能→代码定位表 + 模块页含"常见修改场景")。定位层让 AI 改代码前查表即达,免去每次全库搜索;首次用 `prompts/rebuild-wiki.md` 从代码生成,之后随需求收尾增量维护。
-- spec-kit 初始化时对每个团队用到的 agent 各执行一次 `specify init . --force --integration <agent>`,`.specify/`(模板、脚本、constitution)是共享核心,各 agent 的命令目录(`.claude/commands/`、`.cursor/` 等)**全部提交入库**——任何同事克隆仓库即获得同一套 `/speckit.*` 命令。
+- spec-kit 初始化时对每个团队用到的 agent 各执行一次 `specify init . --force --integration <agent>`。`.specify/`(模板、脚本、constitution)与各 agent 命令目录(`.claude/commands/`、`.cursor/` 等)是**本地生成物**,已被 .gitignore 忽略,克隆仓库后重跑 vibe-init 即重建;`specs/`(需求 spec)同为**过程产物,不入库**——长期真相在 docs/,由 finalize-feature 沉淀。
 
 ### 2.2 痛点二:多应用关联需求
 
 **机制:hub 总 spec + 服务注册表 + 契约优先。**
 
 - `registry/services.yaml` 是全系统唯一权威的服务清单:每个服务的仓库地址、负责人、上下游依赖、契约文档指针。AI 工具处理跨应用需求时先读它,即可知道"改 A 会影响谁"。
-- registry 用三类关系描述系统:REST/跨库走 `depends_on`、MQ 发布订阅走 `topics`(producers/consumers)、RPC facade 接口走 `facades`(owner/called_by);服务另有 `boundary` 字段声明职责边界。跨应用需求分析由此从"查一层依赖"升级为图遍历,输出"涉及哪些服务 + 各自边界 + 如何交互"。
-- **registry 维护机制**(详见 `registry/README.md`):关系单一来源——REST/跨库写 `depends_on`、MQ 写 `topics`、facade 写 `facades`,服务条目不镜像收发关系;三个声明式更新时机(vibe-init 接入登记、finalize-feature 依赖变化时更新、cross-app-spec 立项时校对)+ CI 自动校验(`scripts/registry-check.py`:引用完整性、字段合法性,合入后自动重生成依赖图)+ 定期用 `registry-sync` 从代码反推真实依赖校准声明。
-- 跨应用需求流程:先在 hub `specs/NNN-需求名/spec.md` 立**总 spec**(需求概述、影响面、契约变更、各服务职责拆分、上线顺序),再到各应用仓库 `/speckit.specify` 建**子 spec** 并回链总 spec。总 spec 的"影响面"表格反向链接所有子 spec,双向可追溯。
+- registry 用两类关系描述系统:点对点调用(REST/RPC/跨库)走 `depends_on`(`via` 记具体方式)、MQ 发布订阅走 `topics`(producers/consumers);服务另有 `boundary` 字段声明职责边界。跨应用需求分析由此从"查一层依赖"升级为图遍历,输出"涉及哪些服务 + 各自边界 + 如何交互"。
+- **粒度是服务级,不是接口级**:registry 只回答"哪些服务被牵涉、用什么方式",不记具体接口——澄清阶段需要的是前者,接口在实施阶段读代码即可发现,记进 registry 只会带来数倍维护量和必然漂移。因此"这个需求哪些事归 A、哪些归 B"的答案不在关系表里,而在 `boundary`(尤其"**不负责**"那半句)。
+- **registry 维护机制**(详见 `registry/README.md`):关系单一来源——点对点写 `depends_on`、MQ 写 `topics`,服务条目不镜像收发关系;三个声明式更新时机(vibe-init 接入登记、finalize-feature 依赖变化时更新、cross-app-spec 立项时校对)+ CI 自动校验(`scripts/registry-check.py`:引用完整性、字段合法性,合入后自动重生成依赖图)+ 定期用 `registry-sync` 从代码反推真实依赖校准声明。
+- 跨应用需求流程:先在 hub `specs/NNN-需求名/spec.md` 立**总 spec**(需求概述、影响面、契约变更、各服务职责拆分、上线顺序),再到各应用仓库 `/speckit.specify` 建**子 spec** 并回链总 spec。子 spec 是各仓库的过程产物(`specs/` 不入库),总 spec 的"影响面"表因此记**负责人 / 分支 / 状态**而非文件路径。
 - **契约先于实现**:跨服务接口(API/消息/事件)在总 spec 的契约章节先定稿,提供方与消费方并行开发;上线顺序在总 spec 中明确(通常先发提供方)。
 
 ### 2.3 痛点三:文档未及时维护 / 文档在本地
@@ -74,7 +75,7 @@ hub(registry + 跨应用 specs + 公共 docs)与 kit(模板/脚本/插件)职责
 **机制:三道防线,前两道防止、第三道兜底修复。**
 
 1. **流程内建**(宪法约束):`plugin/templates/constitution-base.md` 规定"任务完成定义包含文档更新"、"文档唯一权威来源是 git 仓库"。spec-kit 各阶段都读 constitution,AI 在 implement 阶段会自动把文档更新纳入任务。
-2. **PR/CI 卡点**:PR 模板含文档 checklist;CI(`doc-freshness.yml`)检测"源码变了但 docs/、AGENTS.md、specs/ 都没动"并发出警告(试用期用 warning,推广稳定后可改为 fail)。
+2. **PR/CI 卡点**:PR 模板含文档 checklist;CI(`doc-freshness.yml`)检测"源码变了但 docs/、AGENTS.md 都没动"并发出警告(试用期用 warning,推广稳定后可改为 fail)。判定只认 docs/ 与 AGENTS.md——**写了 spec 不算数,把结论沉淀进长期文档才算数**。
 3. **兜底修复**:`prompts/sync-docs.md`——任何人用任何 AI 工具说"按 prompts/sync-docs.md 执行",即可扫描上次文档更新以来的代码变更,反推补齐文档。即使有人漏了,下一个人一条命令修复,文档债不会滚雪球。对完全没有文档的存量仓库,用 `prompts/vibe-init-docs.md` 从代码反向生成整套文档。
 
 文档生成覆盖完整生命周期,四个 prompt/规范各管一段:`vibe-init-docs`(存量仓库初始生成)→ `finalize-feature`(每个需求完成后把 spec 结论沉淀进 docs/,spec 是过程产物、docs 才是长期真相)→ `sync-docs`(日常失真修复);`docs/doc-style.md` 是统一写作规范,保证不同人、不同 AI 工具生成的文档质量一致。
@@ -125,9 +126,9 @@ docs/wiki/                   # 代码定位层:code-map.md + modules/ 模块页
 prompts/rebuild-wiki.md      # 从代码生成/重建 wiki
 prompts/finalize-feature.md  # 需求完成后沉淀文档(含 wiki 增量)
 prompts/sync-docs.md         # 文档补齐流程
-.specify/                    # spec-kit 核心(模板/脚本/constitution)
-.claude/ .cursor/ .codex/    # 各 agent 命令目录(全部入库)
-specs/                       # 本应用需求 spec(spec-kit 产物)
+.specify/                    # spec-kit 核心(模板/脚本/constitution;本地生成,不入库)
+.claude/ .cursor/ .codex/    # 各 agent 命令目录(本地生成,不入库;重跑 vibe-init 重建)
+specs/                       # 本应用需求 spec(spec-kit 过程产物,本地生成,不入库)
 .github/PULL_REQUEST_TEMPLATE.md
 .github/workflows/doc-freshness.yml
 ```

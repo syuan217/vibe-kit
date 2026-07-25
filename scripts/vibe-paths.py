@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -23,14 +24,30 @@ except ImportError:
     sys.exit("缺少依赖 PyYAML,请先安装: pip install pyyaml")
 
 
+SUBCOMMANDS = ("list", "add", "check", "resolve")
+
+
+def hub_arg() -> str | None:
+    """命令行首参若「非 flag + 非子命令 + 是已存在的目录」,才当作可选的 hub 目录参数。
+
+    必须要求是目录:否则拼错的子命令(`lst`)会被当成 hub 路径吃掉,变成静默成功。
+    find_hub 与 main 共用本判定,保证「被当作 hub 的」和「被剥离的」永远是同一个参数。
+    """
+    if len(sys.argv) > 1:
+        a = sys.argv[1]
+        if not a.startswith("-") and a not in SUBCOMMANDS and pathlib.Path(a).is_dir():
+            return a
+    return None
+
+
 def find_hub() -> pathlib.Path:
     """定位 hub(含 registry/services.yaml)。脚本可随插件分发,故不依赖自身位置。
 
     优先级: 命令行参数 > $VIBE_HUB > 当前目录 > 脚本上级目录(合一/hub 内运行的回退)。
     """
     candidates = []
-    if len(sys.argv) > 1 and not sys.argv[1].startswith("-") and sys.argv[1] not in {"list", "add", "check", "resolve"}:
-        candidates.append(pathlib.Path(sys.argv[1]))
+    if (a := hub_arg()) is not None:
+        candidates.append(pathlib.Path(a))
     if os.environ.get("VIBE_HUB"):
         candidates.append(pathlib.Path(os.environ["VIBE_HUB"]))
     candidates.append(pathlib.Path.cwd())
@@ -91,6 +108,25 @@ def get_remote_url(repo_path: pathlib.Path) -> str | None:
         return None
 
 
+def normalize_repo_url(url: str) -> str:
+    """归一化仓库 URL 为 `host/org/repo`,用于与 registry 的 repo 字段比较。
+
+    覆盖 `https://host/org/repo(.git)`、`http://`、`ssh://git@host(:port)/org/repo`、
+    scp 风格 `git@host:org/repo(.git)` 等形式;无法识别时原样返回(退化为字符串相等)。
+    """
+    u = url.strip()
+    m = re.match(r"^(?:https?|ssh|git)://(?:[^@/]+@)?([^/]+?)/(.+)$", u)
+    if not m:
+        m = re.match(r"^[^@/]+@([^:]+):(.+)$", u)  # scp 风格 git@host:org/repo
+    if not m:
+        return u
+    host, path = m.group(1).lower(), m.group(2).strip("/")
+    host = re.sub(r":\d+$", "", host)  # 自建 GitLab 常带端口(ssh://git@host:2222/...),不参与比较
+    if path.endswith(".git"):
+        path = path[:-4]
+    return f"{host}/{path}"
+
+
 def save_local_paths(paths: dict[str, str]) -> None:
     """落盘(带文件头注释)。保留 key 插入顺序。"""
     body = "\n".join(f"  {k}: {v}" for k, v in paths.items()) or ""
@@ -120,8 +156,8 @@ def cmd_list() -> int:
             remote = get_remote_url(pathlib.Path(path))
             if remote is None:
                 status = "WARN: 路径不是 git 仓库或无 origin"
-            elif remote != reg[sid] and remote not in (reg[sid],) and reg[sid] not in (remote,):
-                # 只 WARN 不阻止(fork / ssh vs https 同仓库都允许)
+            elif normalize_repo_url(remote) != normalize_repo_url(reg[sid]):
+                # 只 WARN 不阻止(fork 等情况允许;ssh vs https 已被归一化)
                 status = f"WARN: remote 不匹配(registry={reg[sid]}, local={remote})"
             else:
                 status = "OK"
@@ -151,9 +187,9 @@ def cmd_add(args: list[str]) -> int:
     if remote is None:
         print(f"ERROR: 无法读取 {path} 的 git remote(检查 origin 是否配置)")
         return 1
-    if remote != reg[sid]:
+    if normalize_repo_url(remote) != normalize_repo_url(reg[sid]):
         print(f"WARN:  remote 不匹配 —— registry={reg[sid]}, local={remote}")
-        print(f'       (允许 fork / ssh-vs-https,继续写入;若 clone 错仓库请核对)')
+        print(f'       (允许 fork,继续写入;若 clone 错仓库请核对)')
 
     paths = load_local_paths()
     action = "更新" if sid in paths else "新增"
@@ -190,7 +226,7 @@ def cmd_check() -> int:
         remote = get_remote_url(path)
         if remote is None:
             errors.append(f"{sid}: 无法读取 git origin remote ({path})")
-        elif remote != reg[sid]:
+        elif normalize_repo_url(remote) != normalize_repo_url(reg[sid]):
             warnings.append(f"{sid}: remote 不匹配 (registry={reg[sid]}, local={remote})")
 
     for w in warnings:
@@ -218,11 +254,16 @@ def cmd_resolve(args: list[str]) -> int:
 
 
 def main() -> int:
-    # 剥离可选的 hub 目录参数(第一个非子命令参数若是目录则吃掉)
     args = sys.argv[1:]
     if not args:
         print(__doc__)
         return 0
+    # 剥离可选的 hub 目录参数(判定与 find_hub 共用 hub_arg,不会与拼错的子命令混淆)
+    if hub_arg() is not None:
+        args = args[1:]
+        if not args:
+            print(__doc__)
+            return 0
     cmd = args[0]
     rest = args[1:]
     if cmd == "list":
@@ -233,7 +274,7 @@ def main() -> int:
         return cmd_check()
     if cmd == "resolve":
         return cmd_resolve(rest)
-    print(f"未知子命令: {cmd}(可用: list / add / check / resolve)")
+    print(f"未知子命令: {cmd}(可用: {' / '.join(SUBCOMMANDS)})")
     return 1
 
 

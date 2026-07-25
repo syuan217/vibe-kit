@@ -2,7 +2,17 @@
 name: plugin-release
 on:
   pull_request:
-    paths: ["plugin/**", ".claude-plugin/**", ".github/workflows/plugin-release.yml"]
+    # 校验读的文件都要列进来,否则「只改 VERSION」这类 PR 会静默跳过校验
+    paths:
+      - "plugin/**"
+      - "prompts/**"
+      - ".claude-plugin/**"
+      - "VERSION"
+      - "CHANGELOG.md"
+      - "README.md"
+      - "scripts/vibe-release.py"
+      - "scripts/sync-prompts.py"
+      - ".github/workflows/plugin-release.yml"
   push:
     tags: ["v*"]
 jobs:
@@ -10,30 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Validate plugin & marketplace manifests
-        run: |
-          python3 - <<'EOF'
-          import json, pathlib, re, sys
-          m = json.load(open('plugin/.claude-plugin/plugin.json'))
-          assert re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', m['name']), 'plugin name must be kebab-case'
-          v = m['version']
-          # zcode 原生清单:必须存在且版本/name 一致
-          zj = json.load(open('plugin/.zcode-plugin/plugin.json'))
-          assert re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', zj['name']), 'zcode plugin name must be kebab-case'
-          assert zj['name'] == m['name'], f'name mismatch: zcode {zj["name"]} vs claude {m["name"]}'
-          assert zj['version'] == v, f'zcode plugin.json version mismatch: {zj["version"]} vs {v}'
-          assert zj.get('skills') == 'skills', f'zcode plugin.json must declare "skills": "skills"'
-          mp = json.load(open('.claude-plugin/marketplace.json'))
-          assert mp['plugins'], 'marketplace has no plugins'
-          version_file = open('VERSION').read().strip()
-          assert mp['version'] == v, f'marketplace.json top version mismatch: {mp["version"]} vs plugin.json {v}'
-          assert mp['plugins'][0]['version'] == v, f'marketplace.json plugins[0] version mismatch: {mp["plugins"][0]["version"]} vs plugin.json {v}'
-          assert version_file == v, f'VERSION file mismatch: {version_file} vs plugin.json {v}'
-          for d in pathlib.Path('plugin/skills').iterdir():
-              t = (d / 'SKILL.md').read_text()
-              assert t.startswith('---') and 'name:' in t and 'description:' in t, f'{d.name}: bad frontmatter'
-          print('validation OK')
-          EOF
+      # 下面两条与 AGENTS.md「提交前本地校验」是同一组命令,CI 不内联任何额外规则
+      - name: Validate versions, manifests & skill roster
+        # 五处版本一致 + 清单/frontmatter 结构 + skill 名册与数量,逻辑唯一来源是 scripts/vibe-release.py
+        run: python3 scripts/vibe-release.py check
+      - name: Check prompts are in sync with skills
+        # prompts/ 与应用模板副本由 SKILL.md 生成,防手工同步漂移
+        run: python3 scripts/sync-prompts.py --check
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: validate
