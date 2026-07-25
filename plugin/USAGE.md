@@ -37,6 +37,20 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 
 ## 三、七个 Skill 详解
 
+速查(**在哪执行**决定你要先 `cd` 到哪;**要 hub 吗**决定没配 hub 时能不能用):
+
+| Skill | 一句话 | 在哪执行 | 要 hub 吗 | 频率 |
+|---|---|---|---|---|
+| vibe-init | 仓库接入工作流 | 应用仓库 | 可选(之后补登记) | 一次性 |
+| vibe-init-docs | 从代码反向生成整套文档 | 应用仓库 | 否 | 一次性 |
+| rebuild-wiki | 生成/重建代码定位 wiki | 应用仓库 | 否 | 首次 + 大重构后 |
+| cross-app-spec | 立跨应用总 spec、定契约 | **hub** | **必须** | 每个跨应用需求 |
+| finalize-feature | 需求收尾、结论沉淀进 docs/ | 应用仓库 | 否(跨应用需求时要) | **每个需求** |
+| sync-docs | 文档失真时增量补齐 | 应用仓库 | 否 | 按需 |
+| registry-sync | 从代码校准依赖声明 | 应用仓库 | **必须** | 每月 / 大需求后 |
+
+日常只有 **finalize-feature** 是每个需求都要做的;其余按需触发。
+
 ### 1. vibe-init — 仓库接入
 
 | | |
@@ -75,8 +89,9 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 | 什么时候用 | 跨应用需求的**最开始**,动任何代码之前 |
 | 你可以说 | "这个需求涉及订单和用户两个服务" / "建个跨应用 spec" / "帮我分析影响面" |
 | 需要提供 | hub 路径;需求描述 |
-| 做什么 | 读 registry(v2:services+topics+facades)图遍历推断影响面给你确认;建 spec(概述、影响面表含边界/交互方式、契约变更、职责拆分、上线顺序);为每个涉及服务生成拷贝即用的 /speckit.specify 启动指令 |
-| 之后 | 契约经相关 owner 评审(人工闸口,不自动跳过)后,到各应用仓库粘贴启动指令即进入标准 spec-kit 流程 |
+| 做什么 | 先问你"最核心的是哪个服务"定种子 → 读 registry(v3:services+topics)图遍历推断影响面给你确认 → **就跨端问题澄清**(职责归属、兼容策略、失败/幂等语义、一致性、上线顺序硬约束)→ 建 spec(概述、影响面表、待定问题、契约变更、职责拆分、上线顺序)→ 为每个涉及服务生成拷贝即用的 /speckit.specify 启动指令 |
+| 澄清的边界 | 只问"**答案不同会改变一个以上服务做法**"的问题——这类问题单服务的 `/speckit.clarify` 结构上问不出来。只影响一家的会被下放到该服务自己 clarify。**答不上来就留「待定问题」,别硬答**:猜错的答案写进契约后,下游会当既定前提照做 |
+| 之后 | 契约经相关 owner 评审(人工闸口,不自动跳过;评审前先清掉标了"契约评审前定"的待定项)后,到各应用仓库粘贴启动指令即进入标准 spec-kit 流程 |
 
 ### 5. finalize-feature — 需求收尾沉淀
 
@@ -104,7 +119,7 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 | 什么时候用 | 大需求收尾后、或每月对全部服务跑一轮;怀疑 registry 不准时 |
 | 你可以说 | "校准一下依赖" / "检查这个服务的依赖关系对不对" |
 | 需要提供 | hub 路径 |
-| 做什么 | 扫描代码 → 按 topics/facades/depends_on 三类报告缺失/多余/方式不符(存疑项列证据不静默写入)→ 新增对外接口时提醒复核 boundary → 确认后更新 registry、跑校验、重生成依赖图 |
+| 做什么 | 扫描代码 → 按 depends_on/topics 两类报告缺失/多余/方式不符(服务级粒度,同一对端多个接口合并为一条;存疑项列证据不静默写入)→ 新增对外接口时提醒复核 boundary → 确认后更新 registry、跑校验、重生成依赖图 |
 
 ## 四、典型场景(人视角)
 
@@ -118,7 +133,39 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 
 **发现文档不对**:"同步文档"(sync-docs)。不用追究是谁漏的,一条命令修复。
 
-**维护服务关系(registry)**:平时不用管——vibe-init 登记、finalize-feature 随需求更新、hub CI 自动校验和重生成依赖图;每月或大需求后对各服务说"校准依赖"(registry-sync)防止声明与代码脱节。详细机制见 hub `registry/README.md`。
+**维护服务关系(registry)**:平时不用管——vibe-init 登记、finalize-feature 随需求更新、hub CI 自动校验和重生成依赖图;每月或大需求后对各服务说"校准依赖"(registry-sync)防止声明与代码脱节。
+
+### 登记本服务(接入后的第一件事)
+
+在 hub 的 `registry/services.yaml` 加一条。**只记服务级关系,不记接口**——具体调哪个方法留给实施时读代码:
+
+```yaml
+  - id: order-service                 # kebab-case,与仓库名一致
+    repo: https://github.com/your-org/order-service
+    owner: yinn
+    description: 订单核心服务
+    boundary: |                       # 必填,registry 里最值钱的字段
+      负责订单生命周期(创建、支付回调、状态流转)。
+      不负责:库存扣减(inventory-service)、履约(fulfillment-service)。
+    docs: { agents: AGENTS.md, architecture: docs/architecture.md, api: docs/api.md }
+    depends_on:                       # 无依赖也要显式写 []
+      - { id: user-service, via: Dubbo, contract: user-service:docs/api.md }
+```
+
+四件最容易做错的事(都会被 registry-check 警告):
+
+1. **`boundary` 的"不负责"那半句别省** —— 跨应用需求派活时,AI 就是靠它避免把活派给错误的服务。
+2. **MQ 不写 `depends_on`** —— 发布订阅关系归 `topics[]`(`producers`/`consumers`),`depends_on` 只放点对点调用(`via` 取 `REST`/`DB`/`Dubbo`/`SOFA`/`gRPC`/`Feign`)。
+3. **同一个对端只写一条** —— 对方暴露 5 个 Dubbo 接口也只写一条 `via: Dubbo`。
+4. **`contract` 是指针不是内容,且要指对端** —— 格式 `<service-id>:<对方仓库内路径>`(如 `user-service:docs/api.md`,可带 `#锚点`)。裸写 `docs/api.md` 说不清是哪个仓库;写成自己的 service-id 也不对——契约由**提供方**维护。registry 里永远不抄接口签名。
+
+改完在 hub 跑:
+
+```bash
+python3 scripts/registry-check.py && python3 scripts/registry-graph.py
+```
+
+字段全集与维护规范见 hub `registry/README.md`(权威来源)。
 
 ## 五、AI Agent 使用规则
 
@@ -128,17 +175,37 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 2. **定位代码先查表**:在已接入 vibe-kit 的仓库改代码前,先读 `docs/wiki/code-map.md` 与相关模块页;查不到再全库搜索,并在任务结束时把新发现补进 code-map。**跨仓库定位**(需要读对端服务代码)时,先在 hub 跑 `python3 scripts/vibe-paths.py resolve <service-id>` 取本地 clone 路径;未映射则询问用户去 `add`,**禁止为定位代码而 clone 任何仓库**;拿到本地路径后仍按本条规则读该仓库的 `docs/wiki/code-map.md` 再定位具体文件(机制见 `docs/local-paths.md`)。
 3. **skill 链**:vibe-init(存量仓库)→ 建议 vibe-init-docs;vibe-init-docs → 内部调用 rebuild-wiki;cross-app-spec 完成 → 引导用户到各应用仓库走 spec-kit 流程;任何 skill 发现契约/依赖变化 → 提醒更新 hub registry 并重跑 `scripts/registry-graph.py`。
 4. **hub 定位**:按优先级——应用仓库根 `.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → 问用户;不要猜。
-5. **事实边界**:文档中的路径、符号、接口必须在代码中真实存在,生成后用搜索工具核对;不确定标 `TODO(待确认)`,禁止臆造;行号永远不写入文档。
-6. **确认后提交**:所有 skill 的产出先给用户变更摘要,确认后再 commit(各 skill 内规定了 commit message 格式)。
-7. **只在职责内动手**:文档类 skills 只改文档不改代码;宪法基线条款不得修改。
+5. **registry 是服务级粒度**:写入 registry 的关系只到"哪个服务、什么方式",**不得记接口名/方法名**;同一对端的多个接口合并为一条 `depends_on`。要表达"这个服务负责什么"用 `boundary`,不要靠罗列接口。
+6. **事实边界**:文档中的路径、符号、接口必须在代码中真实存在,生成后用搜索工具核对;不确定标 `TODO(待确认)`,禁止臆造;行号永远不写入文档。
+7. **确认后提交**:所有 skill 的产出先给用户变更摘要,确认后再 commit(各 skill 内规定了 commit message 格式)。
+8. **只在职责内动手**:文档类 skills 只改文档不改代码;宪法基线条款不得修改。
 
 ## 六、FAQ
 
 - **skill 没有自动触发?** 直接说 skill 名即可,如"用 sync-docs 检查一下"。
 - **zcode / Claude 都支持吗?** 支持。插件根目录同时携带 `.zcode-plugin/plugin.json` 与 `.claude-plugin/plugin.json` 两份清单,skill 内容同一份。zcode 用户按 §二安装即可,与 Claude 用户体验一致。
 - **Cursor / Codex 同事怎么办?** 这两个工具暂无插件市场;其用户使用应用仓库内 `prompts/*.md`(内容与插件同源),效果一致。
-- **插件和 hub 里的 prompts 改了一边怎么办?** 二者同源,修改工作流时须同步更新 `plugin/skills/` 与 `prompts/`、`plugin/templates/`,然后重新打包分发 `.plugin`。
+- **插件和 hub 里的 prompts 改了一边怎么办?** 不会只改一边:`plugin/skills/<name>/SKILL.md` 是唯一源,`prompts/` 与应用模板里的副本由 `python3 scripts/sync-prompts.py --write` 生成(CI 用 `--check` 防漂移,勿手改副本);改完重新打包分发 `.plugin`。
 - **升级插件?** hub 仓库 `plugin/` 目录改完、`plugin.json`(Claude `.claude-plugin/` + zcode `.zcode-plugin/` 两处)与 `.claude-plugin/marketplace.json` 版本号同步递增、推送 GitHub 并打 tag(CI 自动发 Release);团队执行 `/plugin marketplace update vibe-kit`(Claude)或在 zcode Discover 刷新后重装即可。
+- **跨版本升级要做什么?** 每个版本的手工步骤写在 `CHANGELOG.md` 对应版本的「迁移指引」一节(权威来源,不在此复述)。0.7.0 起一律查 CHANGELOG;更早的两个版本见文末「历史版本升级步骤」。
+
+## 七、报错怎么办
+
+| 你看到 | 原因与处理 |
+|---|---|
+| `缺少依赖 PyYAML,请先安装` | hub 脚本(registry-check / registry-graph / vibe-paths)只依赖这一个第三方库:`pip install pyyaml` |
+| `未找到 hub(缺少 registry/services.yaml)` | 脚本按「命令行参数 → `$VIBE_HUB` → 当前目录 → 脚本上级目录」找 hub。在应用仓库里跑要传路径,或先 `export VIBE_HUB=<hub 路径>` |
+| AI 反复问你 hub 在哪 | 应用仓库根缺 `.vibe-hub` 文件(个人本地配置,不入库)。重跑 `vibe-init.sh` 会写入,或手动 `echo <hub绝对路径> > .vibe-hub` |
+| `schema version 必须为 3` | hub 的 registry 还是旧 schema,按 `CHANGELOG.md`「迁移指引」转换;检测到遗留 `facades[]` 时报错里直接给了折叠办法 |
+| `<service>: 缺少必填字段 boundary` | v3 起 `boundary` 必填,补上"负责……/不负责……(归 <service-id>)"两句 |
+| `contract 缺少 <service-id>: 前缀` / `contract 前缀是 X,应为 Y` | contract 是跨仓库指针,格式 `<对端 service-id>:<对端仓库内路径>`;契约由提供方维护,所以前缀是对端(topic 则是 owner) |
+| `依赖图已过期` | `services.yaml` 改了但没重生成:`python3 scripts/registry-graph.py`(合入 main 后 CI 也会自动做) |
+| `未检测到 specify CLI` | `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`;没有 uv 先 `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| CI 报 `prompt 副本与 skill 不同源` | 有人手改了 `prompts/` 下的副本。副本是生成物——改 `plugin/skills/<name>/SKILL.md`,再跑 `python3 scripts/sync-prompts.py --write` |
+| doc-freshness 警告"源码变了但文档没动" | 说"需求收尾"(finalize-feature)或"同步文档"(sync-docs)。注意它只认 `docs/` 与 `AGENTS.md`——**写了 spec 不算数** |
+
+## 八、历史版本升级步骤
+
 - **从 0.4.x 升级到 0.5.0?** 0.5.0 起 `docs/.sync-commit`、`.vibe-hub`、`.vibe-kit-version` 改为本地文件不入库。已接入的应用仓库升级后执行一次:
 
   ```bash

@@ -4,6 +4,7 @@
 用法: python3 scripts/registry-check.py [hub目录]
 退出码: 0 通过(允许有 warning);1 存在 error。CI 与本地均可运行。
 """
+import hashlib
 import os
 import pathlib
 import re
@@ -37,14 +38,36 @@ def find_hub() -> pathlib.Path:
 
 
 ROOT = find_hub()
-VALID_VIA = {"REST", "DB"}                      # depends_on 收窄:facade/MQ 各有归处
-VALID_FACADE_VIA = {"Dubbo", "SOFA", "gRPC", "Feign"}
+VALID_VIA = {"REST", "DB", "Dubbo", "SOFA", "gRPC", "Feign"}  # 点对点调用;MQ 归 topics[]
 VALID_STATUS = {"active", "planned"}
-REQUIRED = ["id", "repo", "owner", "description", "docs"]
+# boundary 自 v3 起必填:关系表只圈范围,"哪些事归谁"全靠它(facade 拿掉后更是唯一来源)
+REQUIRED = ["id", "repo", "owner", "description", "docs", "boundary"]
 MIRROR_FIELDS = ("produces", "consumes", "consumers", "calls")  # 关系单一来源:不应出现在服务条目
+
+# contract 是**指针**不是内容:`<service-id>:<该仓库内相对路径>`,可带 #锚点
+CONTRACT_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*:\S+$")
 
 errors: list[str] = []
 warnings: list[str] = []
+
+
+def check_contract(value, label: str, provider: str, known: set) -> None:
+    """校验 contract 指针。provider 是应当提供该契约的服务(依赖的对端 / topic 的 owner)。"""
+    if not value:
+        warnings.append(
+            f"{label}: 建议补 contract 指针(格式 `<service-id>:<路径>`,如 `{provider}:docs/api.md`)")
+        return
+    v = str(value).strip()
+    if v.startswith(("http://", "https://")):
+        return  # 外部 API 门户:允许,但不随代码走,弱于入库文档
+    if not CONTRACT_RE.match(v):
+        warnings.append(
+            f"{label}: contract `{v}` 缺少 `<service-id>:` 前缀,裸路径无法判断属于哪个仓库")
+        return
+    prefix = v.split(":", 1)[0]
+    if prefix != provider:
+        hint = "该服务未登记" if prefix not in known else "契约应由提供方维护"
+        warnings.append(f"{label}: contract 前缀是 {prefix},应为 {provider}({hint})")
 
 
 def main() -> int:
@@ -55,6 +78,19 @@ def main() -> int:
         return 1
 
     reg = reg or {}  # 空文件时 safe_load 返回 None,兜底避免 AttributeError
+
+    # schema 版本必须显式为 3(v2 → v3 是破坏性升级,见 CHANGELOG 迁移指引)
+    if reg.get("version") != 3:
+        errors.append(f"schema version 必须为 3(当前: {reg.get('version', '缺失')};迁移见 CHANGELOG「迁移指引」)")
+
+    # v2 遗留:facades[] 已折叠为服务级 depends_on(粒度改为服务级,不再记接口)
+    if "facades" in reg:
+        errors.append(
+            "检测到 v2 的顶层 facades[]:v3 已取消接口级实体。"
+            "把每个 facade 的 called_by 成员各加一条 depends_on: "
+            "{id: <该 facade 的 owner>, via: <原 facade 的 via>},然后删除 facades[] 并把 version 改为 3"
+        )
+
     services = reg.get("services") or []
     ids = [s.get("id") for s in services]
 
@@ -75,6 +111,9 @@ def main() -> int:
                 errors.append(f"{sid}: 缺少必填字段 {f}")
         if "depends_on" not in s:
             errors.append(f"{sid}: 缺少 depends_on(无依赖请显式写 [])")
+        # "不负责"那半句最容易省、也最有用:派活时 AI 靠它避免把活派给错误的服务
+        if s.get("boundary") and "不负责" not in str(s["boundary"]):
+            warnings.append(f"{sid}: boundary 建议补一句「不负责:…(归 <service-id>)」,划分工时最值钱的一行")
         for dep in s.get("depends_on") or []:
             did = dep.get("id")
             consumed.add(did)
@@ -86,13 +125,13 @@ def main() -> int:
                 errors.append(f"{sid} -> {did}: status 必须为 active 或 planned")
             if dep.get("status") == "planned" and not dep.get("spec"):
                 warnings.append(f"{sid} -> {did}: planned 依赖建议标注 spec 编号以便溯源与关闭时转 active")
+            check_contract(dep.get("contract"), f"{sid} -> {did}", str(did), known)
         for mf in MIRROR_FIELDS:
             if mf in s:
                 warnings.append(
-                    f"{sid}: {mf} 请勿写在服务条目(关系单一来源,在 topics/facades 维护),建议删除")
+                    f"{sid}: {mf} 请勿写在服务条目(关系单一来源,MQ 关系在 topics[] 维护),建议删除")
 
     topics = reg.get("topics") or []
-    facades = reg.get("facades") or []
 
     # ── topics 校验 ──
     topic_names = [t.get("name") for t in topics]
@@ -105,8 +144,7 @@ def main() -> int:
             errors.append("topic 缺少 name")
         if t.get("owner") not in known:
             errors.append(f"topic {name}: owner {t.get('owner')} 未登记为服务")
-        if not t.get("contract"):
-            warnings.append(f"topic {name}: 建议补 contract 指针(schema 文档)")
+        check_contract(t.get("contract"), f"topic {name}", str(t.get("owner")), known)
         producers = t.get("producers") or []
         consumers = t.get("consumers") or []
         if not producers:
@@ -117,56 +155,36 @@ def main() -> int:
         if t.get("status", "active") not in VALID_STATUS:
             errors.append(f"topic {name}: status 必须为 active 或 planned")
 
-    # ── facades 校验 ──
-    facade_ids = [f.get("id") for f in facades]
-    dup_f = {i for i in facade_ids if facade_ids.count(i) > 1}
-    if dup_f:
-        errors.append(f"facade id 重复: {dup_f}")
-    for f in facades:
-        fid = f.get("id", "<无id>")
-        if not f.get("id") or not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", str(fid)):
-            errors.append(f"facade {fid}: id 必须为 kebab-case")
-        if f.get("owner") not in known:
-            errors.append(f"facade {fid}: owner {f.get('owner')} 未登记为服务")
-        if f.get("via") not in VALID_FACADE_VIA:
-            errors.append(f"facade {fid}: via 必须为 {sorted(VALID_FACADE_VIA)} 之一")
-        if not f.get("contract"):
-            warnings.append(f"facade {fid}: 建议补 contract 指针(方法签名文档)")
-        for svc in f.get("called_by") or []:
-            if svc not in known:
-                errors.append(f"facade {fid}: called_by 引用了未登记的服务 {svc}")
-        if f.get("status", "active") not in VALID_STATUS:
-            errors.append(f"facade {fid}: status 必须为 active 或 planned")
-
-    # 孤立服务提示(连接性:depends_on / 被依赖 / 参与 topic / 参与 facade)
+    # 孤立服务提示(连接性:depends_on / 被依赖 / 参与 topic)
     connected = set(consumed)
     for t in topics:
         if t.get("owner"):
             connected.add(t["owner"])
         connected.update(t.get("producers") or [])
         connected.update(t.get("consumers") or [])
-    for f in facades:
-        if f.get("owner"):
-            connected.add(f["owner"])
-        connected.update(f.get("called_by") or [])
     for s in services:
         sid = s.get("id", "<无id>")
         if not (s.get("depends_on") or []) and sid not in connected:
             warnings.append(f"{sid}: 孤立服务(无任何依赖/被依赖/收发/接口关系),确认是否真实")
 
-    # 依赖图新鲜度
+    # 依赖图新鲜度:比对生成物内嵌的 services.yaml 内容 hash(mtime 不可靠,git 不保留)
     graph = ROOT / "docs" / "service-graph.md"
     reg_file = ROOT / "registry" / "services.yaml"
     if not graph.exists():
         warnings.append("docs/service-graph.md 不存在,运行 python3 scripts/registry-graph.py 生成")
-    elif graph.stat().st_mtime < reg_file.stat().st_mtime:
-        warnings.append("依赖图可能过期,运行 python3 scripts/registry-graph.py 重新生成")
+    else:
+        cur_hash = hashlib.sha256(reg_file.read_bytes()).hexdigest()[:16]
+        m = re.search(r"<!--\s*source-hash:\s*([0-9a-f]+)\s*-->", graph.read_text(encoding="utf-8"))
+        if not m:
+            warnings.append("docs/service-graph.md 缺少来源 hash(旧版生成),运行 python3 scripts/registry-graph.py 重新生成")
+        elif m.group(1) != cur_hash:
+            warnings.append("依赖图已过期(services.yaml 内容已变化),运行 python3 scripts/registry-graph.py 重新生成")
 
     for w in warnings:
         print(f"WARN:  {w}")
     for e in errors:
         print(f"ERROR: {e}")
-    print(f"\n{len(services)} 个服务, {len(topics)} 个 topic, {len(facades)} 个 facade, "
+    print(f"\n{len(services)} 个服务, {len(topics)} 个 topic, "
           f"{len(errors)} 个错误, {len(warnings)} 个警告")
     return 1 if errors else 0
 

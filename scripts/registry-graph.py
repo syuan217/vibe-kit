@@ -4,6 +4,7 @@
 用法: python3 registry-graph.py [hub目录]
 registry 变更后重新运行即可(也可挂到 hub 仓库 CI)。
 """
+import hashlib
 import os
 import pathlib
 import sys
@@ -37,6 +38,12 @@ def find_hub() -> pathlib.Path:
 
 ROOT = find_hub()
 OUT = ROOT / "docs" / "service-graph.md"
+REG = ROOT / "registry" / "services.yaml"
+
+
+def source_hash() -> str:
+    """registry/services.yaml 的内容 hash,写入生成物供 registry-check 比对新鲜度。"""
+    return hashlib.sha256(REG.read_bytes()).hexdigest()[:16]
 
 
 def node_id(sid: str) -> str:
@@ -51,31 +58,27 @@ def t_node(name: str) -> str:  # topic
     return "t_" + node_id(name)
 
 
-def f_node(fid: str) -> str:  # facade
-    return "f_" + node_id(fid)
-
-
 def main() -> None:
-    reg = yaml.safe_load((ROOT / "registry" / "services.yaml").read_text(encoding="utf-8"))
+    reg = yaml.safe_load(REG.read_text(encoding="utf-8")) or {}
     services = reg.get("services") or []
     topics = reg.get("topics") or []
-    facades = reg.get("facades") or []
     known = {s["id"] for s in services}
 
     lines = [
         "# 服务依赖图",
         "",
         "> 由 `scripts/registry-graph.py` 从 `registry/services.yaml` 自动生成,勿手改。",
-        "> 矩形=服务,六边形=MQ topic,平行四边形=facade 接口。",
+        "> 矩形=服务,六边形=MQ topic;边上的标签是调用方式(REST/Dubbo/DB…)。",
+        f"<!-- source-hash: {source_hash()} -->",
         "",
         "```mermaid",
         "graph LR",
     ]
     # 服务节点(矩形)
     for s in services:
-        desc = s.get("description", "")
+        desc = s.get("description", "").replace('"', "'")  # mermaid 标签内双引号会破坏渲染
         lines.append(f'  {s_node(s["id"])}["{s["id"]}<br/><small>{desc}</small>"]')
-    # REST/DB 直连依赖
+    # 点对点调用依赖(REST / RPC / 跨库),边标签为 via
     for s in services:
         for dep in s.get("depends_on") or []:
             via = dep.get("via", "")
@@ -90,15 +93,6 @@ def main() -> None:
             lines.append(f'  {s_node(p)} -->|produces| {t_node(name)}')
         for c in t.get("consumers") or []:
             lines.append(f'  {t_node(name)} -->|consumes| {s_node(c)}')
-    # facade 节点(平行四边形)+ 调用/归属边
-    for f in facades:
-        fid = f["id"]
-        via = f.get("via", "")
-        lines.append(f'  {f_node(fid)}[/"{fid}"/]')
-        if f.get("owner"):
-            lines.append(f'  {f_node(fid)} -.owns.-> {s_node(f["owner"])}')
-        for caller in f.get("called_by") or []:
-            lines.append(f'  {s_node(caller)} -->|{via}| {f_node(fid)}')
     lines += ["```", ""]
 
     OUT.write_text("\n".join(lines), encoding="utf-8")

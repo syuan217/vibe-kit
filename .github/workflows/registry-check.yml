@@ -2,10 +2,10 @@
 name: registry-check
 on:
   pull_request:
-    paths: ["registry/**", "scripts/registry-*.py", "tests/**"]
+    paths: ["registry/**", "scripts/registry-*.py", "scripts/vibe-*.py", "scripts/sync-prompts.py", "tests/**"]
   push:
     branches: [main]
-    paths: ["registry/**", "scripts/registry-*.py", "tests/**"]
+    paths: ["registry/**", "scripts/registry-*.py", "scripts/vibe-*.py", "scripts/sync-prompts.py", "tests/**"]
 jobs:
   check:
     runs-on: ubuntu-latest

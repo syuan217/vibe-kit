@@ -16,10 +16,10 @@ mkdir -p "$TARGET/registry" "$TARGET/specs" "$TARGET/docs" "$TARGET/scripts"
 cp -n "$KIT_DIR/registry/services.yaml" "$TARGET/registry/" 2>/dev/null || true
 cp -n "$KIT_DIR/registry/README.md" "$TARGET/registry/" 2>/dev/null || true
 cp -Rn "$KIT_DIR/specs/." "$TARGET/specs/" 2>/dev/null || true
-for f in architecture.md conventions.md doc-style.md requirement-playbook.md; do
+for f in architecture.md conventions.md doc-style.md requirement-playbook.md local-paths.md; do
   cp -n "$KIT_DIR/docs/$f" "$TARGET/docs/" 2>/dev/null || true
 done
-cp -n "$KIT_DIR/scripts/registry-graph.py" "$KIT_DIR/scripts/registry-check.py" "$TARGET/scripts/" 2>/dev/null || true
+cp -n "$KIT_DIR/scripts/registry-graph.py" "$KIT_DIR/scripts/registry-check.py" "$KIT_DIR/scripts/vibe-paths.py" "$TARGET/scripts/" 2>/dev/null || true
 cp "$KIT_DIR/VERSION" "$TARGET/.vibe-kit-version"
 
 if [[ ! -f "$TARGET/README.md" ]]; then
@@ -35,6 +35,7 @@ if [[ ! -f "$TARGET/README.md" ]]; then
 - 需求怎么处理:docs/requirement-playbook.md
 - registry 怎么维护:registry/README.md
 - 校验:`python3 scripts/registry-check.py`;依赖图:`python3 scripts/registry-graph.py`
+- 本地路径映射(AI 跨仓库跳转):`python3 scripts/vibe-paths.py <list|add|check|resolve>`,见 docs/local-paths.md
 EOF
 fi
 
