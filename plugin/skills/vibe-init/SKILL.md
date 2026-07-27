@@ -25,7 +25,7 @@ description: Initializes the vibe-kit spec-driven workflow in an application rep
 2. 拷贝应用模板(不覆盖已有文件):`cp -Rn "<插件根目录>/templates/app/." .`,然后 `rm -f ./gitignore`(该模板按第 5 步合并进 `.gitignore`,不落地为裸文件)。
 3. 若 `.specify/memory/constitution.md` 不存在或无有效内容(无"工程宪法"字样),拷入 `<插件根目录>/templates/constitution-base.md`。
 4. 写本地标记文件(均已被 gitignore 忽略):
-   - `.vibe-kit-version` ← 插件版本(读插件根目录下任一存在的清单:`.zcode-plugin/plugin.json` 或 `.claude-plugin/plugin.json`,取其 `version` 字段)
+   - `.vibe-kit-version` ← 插件版本(读插件根目录下任一存在的清单:`.kimi-plugin/plugin.json`、`.zcode-plugin/plugin.json` 或 `.claude-plugin/plugin.json`,取其 `version` 字段)
    - `docs/.sync-commit` ← `git rev-parse HEAD`(文档一致性基线)
    - `.vibe-hub` ← hub 绝对路径(前置第 2 步确定;跳过 hub 时不写)
 5. 合并 gitignore:把 `<插件根目录>/templates/app/gitignore` 中的条目逐行去重追加到应用仓库 `.gitignore`(已有条目不动)。

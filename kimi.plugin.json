@@ -2,9 +2,7 @@
   "name": "vibe-kit",
   "version": "1.1.0",
   "description": "Spec-driven vibe coding workflow for polyrepo teams: bootstrap app repos, generate code-locating wikis, keep docs in sync with code, and coordinate cross-app specs",
-  "author": {
-    "name": "Yinn"
-  },
+  "author": "Yinn",
   "keywords": [
     "spec-kit",
     "documentation",
@@ -13,5 +11,10 @@
     "microservices"
   ],
   "homepage": "https://github.com/syuan217/vibe-kit",
-  "repository": "https://github.com/syuan217/vibe-kit"
+  "license": "MIT",
+  "skills": "./plugin/skills/",
+  "interface": {
+    "displayName": "vibe-kit",
+    "shortDescription": "Spec-driven workflow for polyrepo teams (7 skills)"
+  }
 }

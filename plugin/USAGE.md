@@ -6,10 +6,10 @@
 
 vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调"的能力封装为 7 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
 
-模板与团队宪法**随插件分发**(位于插件内 `templates/`),安装即可用,无需 clone vibe-kit 仓库。插件同时支持 **Claude Code** 与 **zcode**(两平台 skill 格式兼容,同一份 `plugin/` 分发)。插件与两方协作:
+模板与团队宪法**随插件分发**(位于插件内 `templates/`),安装即可用,无需 clone vibe-kit 仓库。插件同时支持 **Claude Code**、**zcode** 与 **Kimi Code**(三平台 skill 格式兼容,同一份 `plugin/` 分发)。插件与两方协作:
 
 ```
-vibe-kit 插件(装在 Claude / zcode 里,自带模板/宪法)
+vibe-kit 插件(装在 Claude / zcode / Kimi Code 里,自带模板/宪法)
     │ 读 registry/总 spec         │ 生成/维护文档
     ▼                            ▼
 hub 仓库(团队协调,可选)      应用仓库(你的服务)
@@ -27,7 +27,15 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 
 **zcode**(Settings → Plugin Management → Discover,点 `+` 添加本仓库 GitHub 地址 `syuan217/vibe-kit` 作为 marketplace,然后安装 vibe-kit 插件)。
 
-或**离线方式**(两平台通用):将 `vibe-kit.plugin` 文件拖入会话点击安装(文件可在 GitHub Release 下载)。
+**Kimi Code**(从 GitHub 安装,仓库根的 `kimi.plugin.json` 是入口清单):
+
+```
+/plugins install https://github.com/syuan217/vibe-kit
+```
+
+安装后执行 `/reload` 或开新会话生效;之后可用 `/skill:<name>` 显式调用各 skill,AI 也会按场景自动触发。
+
+或**离线方式**:将 `vibe-kit.plugin` 文件拖入会话点击安装(Claude / zcode;文件可在 GitHub Release 下载);Kimi Code 解压后 `/plugins install <解压目录>`。
 
 前置条件:
 
@@ -183,10 +191,10 @@ python3 scripts/registry-check.py && python3 scripts/registry-graph.py
 ## 六、FAQ
 
 - **skill 没有自动触发?** 直接说 skill 名即可,如"用 sync-docs 检查一下"。
-- **zcode / Claude 都支持吗?** 支持。插件根目录同时携带 `.zcode-plugin/plugin.json` 与 `.claude-plugin/plugin.json` 两份清单,skill 内容同一份。zcode 用户按 §二安装即可,与 Claude 用户体验一致。
+- **zcode / Kimi Code / Claude 都支持吗?** 支持。插件根目录同时携带 `.zcode-plugin/plugin.json`、`.kimi-plugin/plugin.json` 与 `.claude-plugin/plugin.json` 三份清单,skill 内容同一份。zcode / Kimi Code 用户按 §二安装即可,与 Claude 用户体验一致。
 - **Cursor / Codex 同事怎么办?** 这两个工具暂无插件市场;其用户使用应用仓库内 `prompts/*.md`(内容与插件同源),效果一致。
 - **插件和 hub 里的 prompts 改了一边怎么办?** 不会只改一边:`plugin/skills/<name>/SKILL.md` 是唯一源,`prompts/` 与应用模板里的副本由 `python3 scripts/sync-prompts.py --write` 生成(CI 用 `--check` 防漂移,勿手改副本);改完重新打包分发 `.plugin`。
-- **升级插件?** hub 仓库 `plugin/` 目录改完、`plugin.json`(Claude `.claude-plugin/` + zcode `.zcode-plugin/` 两处)与 `.claude-plugin/marketplace.json` 版本号同步递增、推送 GitHub 并打 tag(CI 自动发 Release);团队执行 `/plugin marketplace update vibe-kit`(Claude)或在 zcode Discover 刷新后重装即可。
+- **升级插件?** hub 仓库 `plugin/` 目录改完、`plugin.json`(Claude `.claude-plugin/` + zcode `.zcode-plugin/` + Kimi `.kimi-plugin/` 与仓库根 `kimi.plugin.json` 四处)与 `.claude-plugin/marketplace.json` 版本号同步递增、推送 GitHub 并打 tag(CI 自动发 Release);团队执行 `/plugin marketplace update vibe-kit`(Claude)、在 zcode Discover 刷新后重装,或 Kimi Code 重新 `/plugins install` 并 `/reload` 即可。
 - **跨版本升级要做什么?** 每个版本的手工步骤写在 `CHANGELOG.md` 对应版本的「迁移指引」一节(权威来源,不在此复述)。0.7.0 起一律查 CHANGELOG;更早的两个版本见文末「历史版本升级步骤」。
 
 ## 七、报错怎么办

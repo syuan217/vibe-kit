@@ -56,13 +56,14 @@ def run_release(*args):
 
 @pytest.fixture
 def make_kit(tmp_path):
-    """造一个最小可校验的 kit 目录(registry + 五处版本 + skills),供 vibe-release check 使用。
+    """造一个最小可校验的 kit 目录(registry + 七处版本 + skills),供 vibe-release check 使用。
 
     _make(version=..., skills={目录名: frontmatter name}, **覆盖项) 返回目录路径;
-    传 zcode_skills=None 可制造缺 "skills" 字段的清单。
+    传 zcode_skills=None / kimi_skills=None 可制造缺 "skills" 字段的清单。
     """
     def _make(version="1.0.0", skills=None, plugin_name="vibe-kit",
-              zcode_name=None, zcode_skills="skills"):
+              zcode_name=None, zcode_skills="skills",
+              kimi_name=None, kimi_skills="./skills/", root_kimi_skills="./plugin/skills/"):
         skills = {"vibe-init": "vibe-init"} if skills is None else skills
         (tmp_path / "registry").mkdir(parents=True, exist_ok=True)
         (tmp_path / "registry" / "services.yaml").write_text("version: 3\n", encoding="utf-8")
@@ -78,6 +79,19 @@ def make_kit(tmp_path):
             zj["skills"] = zcode_skills
         (tmp_path / "plugin" / ".zcode-plugin" / "plugin.json").write_text(
             json.dumps(zj), encoding="utf-8")
+
+        (tmp_path / "plugin" / ".kimi-plugin").mkdir(parents=True, exist_ok=True)
+        kj = {"name": kimi_name or plugin_name, "version": version}
+        if kimi_skills is not None:
+            kj["skills"] = kimi_skills
+        (tmp_path / "plugin" / ".kimi-plugin" / "plugin.json").write_text(
+            json.dumps(kj), encoding="utf-8")
+
+        rkj = {"name": kimi_name or plugin_name, "version": version}
+        if root_kimi_skills is not None:
+            rkj["skills"] = root_kimi_skills
+        (tmp_path / "kimi.plugin.json").write_text(
+            json.dumps(rkj), encoding="utf-8")
 
         (tmp_path / ".claude-plugin").mkdir(parents=True, exist_ok=True)
         roster = ", ".join(sorted(skills))

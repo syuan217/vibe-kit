@@ -57,6 +57,8 @@ def find_hub() -> pathlib.Path:
 ROOT = find_hub()
 PLUGIN_JSON = ROOT / "plugin" / ".claude-plugin" / "plugin.json"
 ZCODE_PLUGIN_JSON = ROOT / "plugin" / ".zcode-plugin" / "plugin.json"
+KIMI_PLUGIN_JSON = ROOT / "plugin" / ".kimi-plugin" / "plugin.json"
+ROOT_KIMI_PLUGIN_JSON = ROOT / "kimi.plugin.json"
 MARKETPLACE_JSON = ROOT / ".claude-plugin" / "marketplace.json"
 VERSION_FILE = ROOT / "VERSION"
 CHANGELOG = ROOT / "CHANGELOG.md"
@@ -111,7 +113,8 @@ def cmd_check() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
-    # 1. 版本号五处一致性(plugin/.claude-plugin/plugin.json、plugin/.zcode-plugin/plugin.json、
+    # 1. 版本号七处一致性(plugin/.claude-plugin/plugin.json、plugin/.zcode-plugin/plugin.json、
+    #    plugin/.kimi-plugin/plugin.json、kimi.plugin.json(根)、
     #    .claude-plugin/marketplace.json 顶层+plugins[0]、VERSION)
     try:
         plugin_v = read_json(PLUGIN_JSON)["version"]
@@ -133,12 +136,33 @@ def cmd_check() -> int:
             return 1
     else:
         errors.append(f"{ZCODE_PLUGIN_JSON.relative_to(ROOT)} 缺失(zcode 原生清单,必须存在)")
+    # kimi 清单两份:plugin/.kimi-plugin/(随 zip 分发)+ 仓库根 kimi.plugin.json(GitHub 安装入口)
+    kimi_v = None
+    if KIMI_PLUGIN_JSON.is_file():
+        try:
+            kimi_v = read_json(KIMI_PLUGIN_JSON).get("version")
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"ERROR: 读 {KIMI_PLUGIN_JSON.relative_to(ROOT)} 失败: {e}")
+            return 1
+    else:
+        errors.append(f"{KIMI_PLUGIN_JSON.relative_to(ROOT)} 缺失(Kimi Code 原生清单,必须存在)")
+    root_kimi_v = None
+    if ROOT_KIMI_PLUGIN_JSON.is_file():
+        try:
+            root_kimi_v = read_json(ROOT_KIMI_PLUGIN_JSON).get("version")
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"ERROR: 读 {ROOT_KIMI_PLUGIN_JSON.relative_to(ROOT)} 失败: {e}")
+            return 1
+    else:
+        errors.append(f"{ROOT_KIMI_PLUGIN_JSON.relative_to(ROOT)} 缺失(Kimi Code 从 GitHub 安装的入口清单,必须存在)")
     version_file_v = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.is_file() else None
 
     versions = {
         "VERSION": version_file_v,
         "plugin/.claude-plugin/plugin.json": plugin_v,
         "plugin/.zcode-plugin/plugin.json": zcode_v,
+        "plugin/.kimi-plugin/plugin.json": kimi_v,
+        "kimi.plugin.json (root)": root_kimi_v,
         "marketplace.json (top)": mp.get("version"),
         "marketplace.json (plugins[0])": mp.get("plugins", [{}])[0].get("version") if mp.get("plugins") else None,
     }
@@ -149,7 +173,7 @@ def cmd_check() -> int:
             errors.append(f"{k} 版本号格式不合规: {v}(需 X.Y.Z)")
     unique = {v for v in versions.values() if v}
     if len(unique) > 1:
-        errors.append(f"版本号不一致: {versions}(应五处相同)")
+        errors.append(f"版本号不一致: {versions}(应七处相同)")
 
     # 2. skill 数量/名册
     actual = actual_skill_ids()
@@ -209,6 +233,15 @@ def cmd_check() -> int:
             errors.append(f"zcode 与 claude 清单 name 不一致: {zj.get('name')!r} vs {plugin_name!r}")
         if zj.get("skills") != "skills":
             errors.append('zcode plugin.json 必须声明 "skills": "skills"(zcode 据此发现 skills 目录)')
+    for kj_path, skills_decl in ((KIMI_PLUGIN_JSON, "./skills/"), (ROOT_KIMI_PLUGIN_JSON, "./plugin/skills/")):
+        if not kj_path.is_file():
+            continue
+        kj = read_json(kj_path)
+        rel = kj_path.relative_to(ROOT)
+        if kj.get("name") != plugin_name:
+            errors.append(f"{rel} 与 claude 清单 name 不一致: {kj.get('name')!r} vs {plugin_name!r}")
+        if kj.get("skills") != skills_decl:
+            errors.append(f'{rel} 必须声明 "skills": "{skills_decl}"(Kimi Code 据此发现 skills 目录)')
     for d in sorted(SKILLS_DIR.iterdir()) if SKILLS_DIR.is_dir() else []:
         if not d.is_dir():
             continue
@@ -247,7 +280,7 @@ def cmd_check() -> int:
 # ----------------------------- bump 模式 -----------------------------
 
 def update_version_files(new_v: str) -> list[str]:
-    """改 5 处版本号。返回改动文件相对 ROOT 的列表。"""
+    """改 7 处版本号。返回改动文件相对 ROOT 的列表。"""
     changed: list[str] = []
 
     # VERSION
@@ -268,6 +301,16 @@ def update_version_files(new_v: str) -> list[str]:
         changed.append(str(ZCODE_PLUGIN_JSON.relative_to(ROOT)))
     else:
         print(f"WARN:  {ZCODE_PLUGIN_JSON.relative_to(ROOT)} 不存在,跳过(请先创建)")
+
+    # kimi 清单两份:plugin/.kimi-plugin/(随 zip 分发)+ 仓库根 kimi.plugin.json(GitHub 安装入口)
+    for kj_path in (KIMI_PLUGIN_JSON, ROOT_KIMI_PLUGIN_JSON):
+        if kj_path.is_file():
+            kj = read_json(kj_path)
+            kj["version"] = new_v
+            kj_path.write_text(json.dumps(kj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            changed.append(str(kj_path.relative_to(ROOT)))
+        else:
+            print(f"WARN:  {kj_path.relative_to(ROOT)} 不存在,跳过(请先创建)")
 
     # marketplace.json(两处)
     mp = read_json(MARKETPLACE_JSON)
@@ -479,7 +522,7 @@ def cmd_bump(args: list[str]) -> int:
     print("")
 
     if not auto_yes:
-        print("将执行:1) 改 5 处版本号  2) 修 skill 数量/名册描述  3) 起草/更新 CHANGELOG(调起编辑器)  4) 重打包 .plugin")
+        print("将执行:1) 改 7 处版本号  2) 修 skill 数量/名册描述  3) 起草/更新 CHANGELOG(调起编辑器)  4) 重打包 .plugin")
         ans = input("继续?[y/N] ").strip().lower()
         if ans != "y":
             print("已取消")

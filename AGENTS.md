@@ -6,9 +6,9 @@
 
 为多仓库(polyrepo)微服务团队提供 spec-driven AI 开发工作流:以 AGENTS.md 为跨 AI 工具的统一文档入口,以 spec-kit 为需求开发流程,以服务注册表协调跨应用需求。完整方案见 WORKFLOW.md(先读这个),目录与安装见 README.md。
 
-- **kit 部分**(工具,随版本演进):`plugin/`(Claude/zcode 插件,含 7 个 skills 与 `plugin/templates/` 应用仓库脚手架)、`prompts/`(与 skills 同源的 prompt 副本)、`scripts/`(初始化/校验/发版脚本)、`VERSION`
+- **kit 部分**(工具,随版本演进):`plugin/`(Claude/zcode/Kimi Code 插件,含 7 个 skills 与 `plugin/templates/` 应用仓库脚手架)、`prompts/`(与 skills 同源的 prompt 副本)、`scripts/`(初始化/校验/发版脚本)、`VERSION`
 - **hub 部分**(团队数据,持续更新):`registry/`(服务注册表)、`specs/`(跨应用总 spec)、`docs/`(公共文档)
-- **市场清单**:`.claude-plugin/marketplace.json`(本仓库即插件市场,推送 GitHub 后可直接安装)
+- **插件入口清单**:`.claude-plugin/marketplace.json`(Claude 插件市场,推送 GitHub 后可直接安装)、`kimi.plugin.json`(仓库根,Kimi Code 从 GitHub 安装的入口)
 
 ## 技术栈与运行时
 
@@ -32,7 +32,7 @@
 
 - `plugin/skills/<name>/SKILL.md` — 7 个 skills:cross-app-spec、finalize-feature、rebuild-wiki、registry-sync、sync-docs、vibe-init、vibe-init-docs;每个 skill 就是一个 SKILL.md,**不带任何随附文件**;YAML frontmatter 必填 `name`/`description`,且 `name` 须等于目录名(CI 校验)
 - `plugin/templates/` — 应用仓库脚手架(`app/` 下 AGENTS.md、docs、prompts 等)+ `constitution-base.md` 团队宪法基线
-- `prompts/` — 与 skills 同源的 prompt 副本,供不用 Claude/zcode 的工具(Cursor、Codex 等)直接使用
+- `prompts/` — 与 skills 同源的 prompt 副本,供不用 Claude/zcode/Kimi Code 的工具(Cursor、Codex 等)直接使用
 - `registry/services.yaml` — 全系统服务清单唯一权威来源,schema v3 两类关系:`depends_on`(点对点调用,via 记 REST/DB/Dubbo/SOFA/gRPC/Feign)、`topics[]`(MQ);粒度是**服务级不是接口级**,分工靠 `boundary`;规则见 `registry/README.md`
 - `tests/` — pytest,以子进程方式对临时目录跑真实脚本(`tests/conftest.py` 提供 `make_hub`/`make_kit` fixture 与 `run_*` 辅助函数)
 - `docs/` — 公共文档;`docs/service-graph.md` 由 registry-graph.py 生成,**不手改**
@@ -44,7 +44,7 @@
    - **两处同源**(skill + `prompts/`):cross-app-spec、registry-sync、vibe-init-docs——操作对象是 hub 或一次性执行,应用仓库不放副本。
    - **仅 skill**:vibe-init——由 `scripts/vibe-init.sh` 驱动,逻辑变更须同步改脚本,不出 prompt 副本。
    改流程只改 `plugin/skills/<name>/SKILL.md`(正文保持**渠道中立**:只写执行时看得到的路径,不写插件内部路径——skill 不带随附模板,模板的唯一来源是 `plugin/templates/` 与 `specs/_template/`),然后跑 `python3 scripts/sync-prompts.py --write` 重新生成副本(CI 用 `--check` 防漂移,**勿手改副本**)。
-2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json`、`plugin/.zcode-plugin/plugin.json`(zcode 原生清单)、`.claude-plugin/marketplace.json`(两处:顶层 + `plugins[0]`)、`VERSION` 五处版本号同步递增(CI 校验五处一致),`CHANGELOG.md` 加新版本条目,重新打包 .plugin。**先跑 `python3 scripts/vibe-release.py check` 报漂移,再 `bump <新版本>` 半自动处理**(改版本号、同步 skill 名册、起草 CHANGELOG、重打包)。发布 = push + 打 `v*` tag(CI 自动打包并发 GitHub Release)。
+2. **改了 `plugin/` 就要发版**:`plugin/.claude-plugin/plugin.json`、`plugin/.zcode-plugin/plugin.json`(zcode 原生清单)、`plugin/.kimi-plugin/plugin.json` 与仓库根 `kimi.plugin.json`(Kimi Code 原生清单两份:随 zip 分发 + GitHub 安装入口)、`.claude-plugin/marketplace.json`(两处:顶层 + `plugins[0]`)、`VERSION` 七处版本号同步递增(CI 校验七处一致),`CHANGELOG.md` 加新版本条目,重新打包 .plugin。**先跑 `python3 scripts/vibe-release.py check` 报漂移,再 `bump <新版本>` 半自动处理**(改版本号、同步 skill 名册、起草 CHANGELOG、重打包)。发布 = push + 打 `v*` tag(CI 自动打包并发 GitHub Release)。
 3. **registry 变更**:改 `registry/services.yaml` 后运行 registry-check 与 registry-graph;规则见 `registry/README.md`。
 4. **文档规范**:遵循 `docs/doc-style.md`(AGENTS.md ≤150 行、只写可证实内容、权威来源唯一、图用 mermaid);修改模板时保持与 WORKFLOW.md、README.md、`plugin/USAGE.md` 的交叉引用一致。
 5. 团队宪法基线(`plugin/templates/constitution-base.md`)条款变更需团队评审,不得随手改。

@@ -6,6 +6,19 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-27
+
+### Added
+
+- **Kimi Code 平台支持**:新增 `plugin/.kimi-plugin/plugin.json`(随 `.plugin` 包分发)与仓库根 `kimi.plugin.json`(`/plugins install https://github.com/syuan217/vibe-kit` 的入口清单,指向 `./plugin/skills/`)两份 Kimi 原生清单,与 `.claude-plugin/`、`.zcode-plugin/` 同源,skill 内容三平台同一份。安装后 `/reload` 生效,`/skill:<name>` 可显式调用。
+- `tests/test_vibe_release.py` 新增 kimi 清单用例(name 与 claude 清单一致性、两处 `skills` 路径声明缺失),`make_kit` fixture 同步造两份 kimi 清单。
+
+### Changed
+
+- 版本号同步点从 5 处扩展为 **7 处**(新增 `plugin/.kimi-plugin/plugin.json` 与根 `kimi.plugin.json`),`scripts/vibe-release.py` 的 check/bump 同步纳入;check 另校验 kimi 清单 name 一致性与 `"skills"` 声明(plugin 内须为 `./skills/`、根清单须为 `./plugin/skills/`)。
+- `vibe-init` skill 读插件版本号的清单候选加入 `.kimi-plugin/plugin.json`(Kimi Code 安装时前两份 claude/zcode 清单同样存在,行为不变)。
+- `README.md`、`plugin/USAGE.md`、`plugin/README.md` 补 Kimi Code 安装/升级说明(离线方式为解压后 `/plugins install <目录>`,与拖入式不同);`AGENTS.md` 硬性约定 #2 更新为七处版本号同步。
+
 ## [1.0.0] - 2026-07-25
 
 ### Added

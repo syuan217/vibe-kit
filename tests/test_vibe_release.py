@@ -14,11 +14,11 @@ def test_version_drift_detected(make_kit):
     kit = make_kit()
     mp = kit / ".claude-plugin" / "marketplace.json"
     data = json.loads(mp.read_text(encoding="utf-8"))
-    data["plugins"][0]["version"] = "9.9.9"  # 五处之一漂移
+    data["plugins"][0]["version"] = "9.9.9"  # 七处之一漂移
     mp.write_text(json.dumps(data), encoding="utf-8")
     r = run_release(str(kit), "check")
     assert r.returncode == 1
-    assert "应五处相同" in r.stdout
+    assert "应七处相同" in r.stdout
 
 
 def test_plugin_name_must_be_kebab_case(make_kit):
@@ -36,6 +36,22 @@ def test_zcode_name_must_match_claude(make_kit):
 def test_zcode_must_declare_skills_dir(make_kit):
     """zcode 靠 "skills": "skills" 发现 skills 目录,缺了插件装上也没有 skill。"""
     r = run_release(str(make_kit(zcode_skills=None)), "check")
+    assert r.returncode == 1
+    assert "skills" in r.stdout
+
+
+def test_kimi_name_must_match_claude(make_kit):
+    r = run_release(str(make_kit(kimi_name="something-else")), "check")
+    assert r.returncode == 1
+    assert "name 不一致" in r.stdout
+
+
+def test_kimi_must_declare_skills_dir(make_kit):
+    """kimi 靠 "skills" 字段发现 skills 目录(plugin 内 ./skills/,仓库根 ./plugin/skills/)。"""
+    r = run_release(str(make_kit(kimi_skills=None)), "check")
+    assert r.returncode == 1
+    assert "skills" in r.stdout
+    r = run_release(str(make_kit(root_kimi_skills=None)), "check")
     assert r.returncode == 1
     assert "skills" in r.stdout
 

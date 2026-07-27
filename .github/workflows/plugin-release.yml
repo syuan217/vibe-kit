@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v5
       # 下面两条与 AGENTS.md「提交前本地校验」是同一组命令,CI 不内联任何额外规则
       - name: Validate versions, manifests & skill roster
-        # 五处版本一致 + 清单/frontmatter 结构 + skill 名册与数量,逻辑唯一来源是 scripts/vibe-release.py
+        # 七处版本一致 + 清单/frontmatter 结构 + skill 名册与数量,逻辑唯一来源是 scripts/vibe-release.py
         run: python3 scripts/vibe-release.py check
       - name: Check prompts are in sync with skills
         # prompts/ 与应用模板副本由 SKILL.md 生成,防手工同步漂移
