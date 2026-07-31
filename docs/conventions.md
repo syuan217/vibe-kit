@@ -1,6 +1,6 @@
 # 团队公共约定
 
-> 跨仓库通用的工程约定。强约束条款应进入 `../plugin/templates/constitution-base.md`(spec-kit 各阶段会读取),本文放较软的惯例与说明。
+> 跨仓库通用的工程约定。强约束条款应进入 `docs/constitution.md`(vibe-clarify/build/verify 各阶段会遵循),本文放较软的惯例与说明。
 
 ## 命名与结构
 
@@ -8,7 +8,7 @@
 
 ## 分支与提交
 
-<分支模型、commit message 约定(spec-kit 默认按 feature 建 NNN-xxx 分支)>
+<分支模型、commit message 约定(vibe-clarify 默认按 feature 建 NNN-需求名 分支)>
 
 ## 联调与环境
 

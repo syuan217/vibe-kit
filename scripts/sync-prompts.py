@@ -5,8 +5,8 @@
 正文必须保持渠道中立(只写执行时看得到的路径,不写插件内部路径)。
 
 生成目标:
-- prompts/<name>.md                       —— SYNCED 中全部 6 个
-- plugin/templates/app/prompts/<name>.md  —— 其中日常类 3 个(APP_COPIES),与 prompts/ 完全一致
+- prompts/<name>.md                       —— SYNCED 中全部(每个 skill 一份)
+- plugin/templates/app/prompts/<name>.md  —— 其中日常类(APP_COPIES),与 prompts/ 完全一致
 
 用法:
   python3 scripts/sync-prompts.py --write   # 重新生成全部副本
@@ -24,7 +24,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # name -> prompt 副本中标题下插入的「> 用法」行(唯一的渠道差异)
 SYNCED = {
     "cross-app-spec": "> 用法:在 **hub 仓库**中对任意 AI 工具说\"按 prompts/cross-app-spec.md 建总 spec:<需求描述>\"。",
-    "finalize-feature": "> 用法:`/speckit.implement` 完成、合 PR 前,对任意 AI 工具说\"按 prompts/finalize-feature.md 收尾 specs/NNN-xxx\"。",
+    "finalize-feature": "> 用法:`/vibe-verify` 通过、PR 评审通过后、合并前,对任意 AI 工具说\"按 prompts/finalize-feature.md 收尾 specs/NNN-xxx\"。",
+    "vibe-clarify": "> 用法:对任意 AI 工具说\"按 prompts/vibe-clarify.md 起草需求 <需求描述>\"(单应用直接启动;跨应用由 cross-app-spec 启动指令带入)。",
+    "vibe-build": "> 用法:`/vibe-clarify` 产出 blueprint 后,对任意 AI 工具说\"按 prompts/vibe-build.md 实现需求\"。",
+    "vibe-verify": "> 用法:`/vibe-build` 完成后、提交 PR 前,对任意 AI 工具说\"按 prompts/vibe-verify.md 核对实现\"。",
     "rebuild-wiki": "> 用法:对任意 AI 工具说\"按 prompts/rebuild-wiki.md 执行\"。首次生成或目录结构大改后重建;日常增量维护走 finalize-feature / sync-docs。",
     "registry-sync": "> 用法:在**应用仓库**中对任意 AI 工具说\"按 hub 的 prompts/registry-sync.md 校准依赖\"。",
     "sync-docs": "> 用法:对任意 AI 编码工具说\"按 prompts/sync-docs.md 执行\"(可附 commit 区间或 PR 号限定范围)。",
@@ -32,7 +35,7 @@ SYNCED = {
 }
 
 # 应用仓库放副本的日常类 prompt(与 prompts/ 完全一致;vibe-init 随模板拷入应用仓库)
-APP_COPIES = ("finalize-feature", "rebuild-wiki", "sync-docs")
+APP_COPIES = ("finalize-feature", "rebuild-wiki", "sync-docs", "vibe-clarify", "vibe-build", "vibe-verify")
 
 NOTICE = "> (本文件由 `scripts/sync-prompts.py` 从 `plugin/skills/{name}/SKILL.md` 生成,勿手改)"
 

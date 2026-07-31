@@ -6,6 +6,38 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-31
+
+移除 spec-kit,自建 3 阶段需求工作流。设计与逐文件核对基准见 `docs/v1.2.0-plan-spec-kit-removal.md`。
+
+动因是试用后的两个痛点:spec-kit 的 plan/tasks 高度结构化、接近代码,优化的是"AI 可执行性"而非"人可读性",团队评审困难;`/speckit.clarify` 一次性甩一堆结构化问题,人读不懂问题意图。澄清与评审这两件事本身是有成熟做法的,只是 spec-kit 的实现不合用——所以流程层自建、引擎层外挂。
+
+### Removed
+
+- **spec-kit 整体移除**:`specify` CLI 的检测/安装/多 agent init 循环、`.specify/` 目录、`/speckit.*` 命令链、`--integrations` 参数、preset 相关叙述全部退出。`scripts/vibe-init.sh` 因此从"装 CLI + 跑 N 次 init + 拷模板"简化为"拷模板 + 注入宪法 + 记标记"。
+
+### Added
+
+- **需求工作流三阶段 skill**(`vibe-clarify` / `vibe-build` / `vibe-verify`,skill 数 7 → 10)。三者接住 spec-kit 原来的 specify/clarify/plan/tasks/implement,并补上一个它没有的环节:
+  - `vibe-clarify`(阶段1)—— 自建 `specs/NNN-需求名/` 骨架,起草 `requirement.md`(给人读)、调 grill-with-docs 逐个澄清、产出 `blueprint.md`(给 AI 执行)与 `open-questions.md`(留痕)。**两类产物分居**是可读性的关键:评审看 requirement,执行读 blueprint,不再用一份文档同时讨好两种读者。
+  - `vibe-build`(阶段2)—— 按 blueprint 任务清单垂直切片逐个实现,有单测能力的变更走 tdd(红→绿),偏离 blueprint 处记进 `spec.md`「实现偏差」。
+  - `vibe-verify`(阶段3)—— 传统「实现完即收尾」流程缺失的校验环。调 code-review 两轴**并行且不合并**评审:Spec 轴核对实现是否忠实 blueprint,Standards 轴核对编码规范。不合并是有意的——一个改动可能符合规范但偏离需求,或实现了需求但代码烂,合并会互相掩盖。
+- **需求文档骨架** `specs/_template/`(`requirement.md` / `blueprint.md` / `open-questions.md`),随 vibe-init 拷入应用仓库并**入库**,是 `specs/` 整体不入库的唯一例外——它是工具不是过程产物,入库让队友克隆即可用。gitignore 写法必须是 `specs/*` + `!specs/_template/`:git 不下降进被整体排除的目录,写成 `specs/` 会让负规则静默失效。
+- `WORKFLOW.md` §1.2「引擎层依赖」、`plugin/templates/app/AGENTS.md`「前置依赖」段:说明引擎装什么、怎么装、不装会怎样。
+- `scripts/vibe-release.py check` 新增 **AGENTS.md skill 名册校验**(名册与 `plugin/skills/` 实际目录按集合比对)。数字类漂移只报 warning(bump 能自动修),名册报 error——bump 修不了名册,warning 会被无视,而名单错比数字错有害:AI 读 AGENTS.md 会以为某个 skill 不存在。`fix_skill_count_in_docs` 的扫描范围同步加上 `AGENTS.md`(此前只扫 README/plugin-README/USAGE,这正是本轮 review 发现「7 个 skills」漏改的原因)。
+
+### Changed
+
+- **澄清/评审引擎改为外部依赖**:grill-with-docs(及同源的 grilling/grill-me)、code-review、tdd 来自 [mattpocock/skills](https://github.com/mattpocock/skills),各应用仓库经 vercel-labs/skills 生态 `npx skills add mattpocock/skills -a <agent>` 安装。**不拷贝、不 submodule**——保持上游同步,英文原装不本地化。流程层 skill 正文只**调用**引擎名,不打包它们;引擎缺失时 vibe-clarify/vibe-verify 会提示安装而非静默降级回"一次甩一堆问题"。
+- **动词链全仓库替换**:`/speckit.specify → clarify → plan → tasks → implement` 改为 `/vibe-clarify → /vibe-build → /vibe-verify`。涉及 `cross-app-spec` 生成的启动指令、`plugin/templates/app/AGENTS.md`、`WORKFLOW.md`、`docs/requirement-playbook.md`、`specs/README.md`、`specs/_template/spec.md`、`plugin/USAGE.md`。
+- **跨应用下放问题成为 grill-with-docs 的强制输入**:grill-with-docs 是主动发现问题的拷问引擎,不会自动感知 cross-app-spec 下放的预定义清单。`vibe-clarify` 步骤 3 显式处理——检查启动指令是否带清单、有则作为第一批必答项逐个拷问到结论、决策树拷问在此基础上补充发现,两类问题都进 `open-questions.md` 并标注来源(上级下放 / 拷问发现)。不这样做,下放的问题会被静默漏掉。
+- **finalize-feature 时序修正**:从「`/speckit.implement` 完成后」改为「**PR 评审通过、合并前**」。`/vibe-verify` 通过只代表"可以提 PR",不是"可以沉淀文档"——代码没经评审定稿就沉淀,评审返工会让文档失真。skill 触发语、`docs/doc-style.md`、`docs/requirement-playbook.md`、`plugin/USAGE.md` 同步。
+- **团队宪法落地路径**:`.specify/memory/constitution.md` → **`docs/constitution.md`**(入库、团队可见、随 PR 走)。应用级补充原则从 `/speckit.constitution` 改为直接编辑该文件。`plugin/templates/constitution-base.md` 第 5、6 条改写为 vibe-clarify 流程措辞。
+- **同源范围扩容**:三处同源(skill + `prompts/` + `plugin/templates/app/prompts/`)从 3 个增至 6 个,新增 vibe-clarify/vibe-build/vibe-verify——它们在应用仓库日常执行,三类用户都需要。`scripts/sync-prompts.py` 的 `SYNCED` 与 `APP_COPIES` 同步。
+- 四份清单的 keywords `spec-kit` → `agent-skills`(`kimi.plugin.json`、`plugin/.claude-plugin/plugin.json`、`plugin/.kimi-plugin/plugin.json`、`.claude-plugin/marketplace.json`);marketplace 名册与三处「N 个 skills」更新为 10。
+- `plugin/templates/app/gitignore`:移除 `.specify/`;agent 命令目录的注释从"各自由 vibe-init 重新生成"改为"各工具自己管理"(vibe-init 不再生成它们)。
+- `plugin/templates/app/.github/workflows/doc-freshness.yml`:排除列表移除 `\.specify/`。
+
 ## [1.1.0] - 2026-07-27
 
 ### Added

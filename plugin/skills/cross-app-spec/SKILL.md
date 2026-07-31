@@ -5,7 +5,7 @@ description: Creates a cross-application master spec in the vibe-kit hub repo fo
 
 # cross-app-spec — 跨应用需求总 spec
 
-适用:涉及 **2 个及以上应用**的需求(单应用需求直接在其仓库走 `/speckit.specify`)。
+适用:涉及 **2 个及以上应用**的需求(单应用需求直接在其仓库走 `/vibe-clarify`)。
 
 ## 步骤
 
@@ -19,7 +19,7 @@ description: Creates a cross-application master spec in the vibe-kit hub repo fo
      - 种子本身是 topic → 直接拉其 producers + consumers
    - 把推断结果给用户确认,不确定的标存疑。涉及服务若 hub `.vibe-paths.local.yaml` 有映射(见 `docs/local-paths.md`),标注「本地可直达」。**每个受影响服务据其 `boundary` 与交互角色,给一句「本需求中它要改什么」**——registry 只圈范围,分工靠 boundary。
    - 具体要改哪个接口/方法,**本阶段不必确定**,留给各服务实施时读代码发现。
-3. **跨端澄清**(影响面确认后、建 spec 前):判据只有一条——**答案不同会改变一个以上服务的做法**才在此处问;只影响一家的留给该服务自己的 `/speckit.clarify`。按下列几类挑真正存疑的问,不要凑数:
+3. **跨端澄清**(影响面确认后、建 spec 前):判据只有一条——**答案不同会改变一个以上服务的做法**才在此处问;只影响一家的留给该服务 `/vibe-clarify` 的 grill-with-docs 拷问(下放方式见步骤 6)。按下列几类挑真正存疑的问,不要凑数:
    - **职责归属**:这件事归 A 还是 B(两边 `boundary` 重叠、或都没覆盖时)
    - **兼容策略**:破坏性变更怎么过渡——双写/双读期、灰度、旧字段何时下线
    - **失败语义**:超时、重试、幂等、补偿由哪一端负责
@@ -40,8 +40,8 @@ description: Creates a cross-application master spec in the vibe-kit hub repo fo
 
    ```
    # 在 <本地路径或 service-id 仓库> 执行:
-   /speckit.specify 实现跨应用需求「NNN-需求名」中本服务的部分。总 spec:<hub spec 链接或路径>。本服务职责:<职责拆分章节内容摘要>。契约约束:<该服务相关的契约变更摘要>。需在本服务 clarify 阶段定的问题:<第 3 步下放给本服务的问题,没有则省略此句>。完成后回填总 spec 影响面表。
+   /vibe-clarify 实现跨应用需求「NNN-需求名」中本服务的部分。总 spec:<hub spec 链接或路径>。本服务职责:<职责拆分章节内容摘要>。契约约束:<该服务相关的契约变更摘要>。需在本服务 clarify 阶段定的问题:<第 3 步下放给本服务的问题,没有则省略此句>。完成后回填总 spec 影响面表。
    ```
 
-   用户在对应仓库粘贴即进入标准 spec-kit 流程(specify → clarify → plan → tasks → implement);跨端问题已在总 spec 定完,本服务 clarify 只需处理自己那一半。
+   用户在对应仓库粘贴即进入 vibe-clarify 流程(vibe-clarify → vibe-build → vibe-verify → finalize-feature);跨端问题已在总 spec 定完,vibe-clarify 会把下放问题作为 grill-with-docs 的强制输入逐个拷问到结论(见 vibe-clarify 步骤 3),本服务只需处理自己那一半。
 7. 若本需求会新增/改变服务依赖:契约定稿(contracts-approved)时即在 `registry/services.yaml` 以 `status: planned` + `spec: NNN` 预登记新依赖(上线关闭需求时转 `active`),并重新生成依赖图:`python3 scripts/registry-graph.py`。

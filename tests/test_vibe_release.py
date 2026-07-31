@@ -79,3 +79,48 @@ def test_skill_roster_drift_detected(make_kit):
     r = run_release(str(kit), "check")
     assert r.returncode == 1
     assert "skills" in r.stdout
+
+
+# --- AGENTS.md 的 skill 名册与数量(它是 AI 的上下文入口,名单错会让 AI 以为某 skill 不存在)---
+
+AGENTS_LINE = "- `plugin/skills/<name>/SKILL.md` — {n} 个 skills:{roster};每个 skill 就是一个 SKILL.md\n"
+
+
+def _write_agents_md(kit, n, roster):
+    (kit / "AGENTS.md").write_text(AGENTS_LINE.format(n=n, roster=roster), encoding="utf-8")
+
+
+def test_agents_md_roster_matching_passes(make_kit):
+    """名册与实际一致(含括注、顺序不同)时不报错。"""
+    kit = make_kit(skills={"vibe-init": "vibe-init", "sync-docs": "sync-docs"})
+    _write_agents_md(kit, 2, "sync-docs(日常)、vibe-init")
+    r = run_release(str(kit), "check")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "0 错误" in r.stdout
+
+
+def test_agents_md_roster_drift_detected(make_kit):
+    """AGENTS.md 名册漏了一个 skill 时应报错(名册不能被 bump 自动修,所以是 error 不是 warning)。"""
+    kit = make_kit(skills={"vibe-init": "vibe-init", "sync-docs": "sync-docs"})
+    _write_agents_md(kit, 2, "vibe-init")
+    r = run_release(str(kit), "check")
+    assert r.returncode == 1
+    assert "AGENTS.md 的 skill 名册与实际不符" in r.stdout
+    assert "缺 ['sync-docs']" in r.stdout
+
+
+def test_agents_md_skill_count_drift_warned(make_kit):
+    """AGENTS.md 数字不对只报 warning —— bump 的 fix_skill_count_in_docs 会自动修。"""
+    kit = make_kit(skills={"vibe-init": "vibe-init", "sync-docs": "sync-docs"})
+    _write_agents_md(kit, 7, "sync-docs、vibe-init")
+    r = run_release(str(kit), "check")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "AGENTS.md: 出现「7 个 skills」但实际 2 个 skill" in r.stdout
+
+
+def test_agents_md_without_roster_line_is_ok(make_kit):
+    """AGENTS.md 没写名册行时不校验(只有写了才守)。"""
+    kit = make_kit()
+    (kit / "AGENTS.md").write_text("# 无名册行\n", encoding="utf-8")
+    r = run_release(str(kit), "check")
+    assert r.returncode == 0, r.stdout + r.stderr

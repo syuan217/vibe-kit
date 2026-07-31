@@ -7,7 +7,7 @@
 1. **一个入口 + 按需深入**:AGENTS.md ≤150 行,只放操作性信息与文档地图;细节放 docs/,用链接不复制。
 2. **只写可证实的内容**:不确定标 `TODO(待确认)`,禁止臆造接口、配置、流程。
 3. **权威来源唯一**:依赖关系以 hub registry/services.yaml 为准,契约以 docs/api.md(或 OpenAPI/proto 文件)为准,其他位置只做链接;同一信息不出现在两处。
-4. **区分过程与长期**:specs/ 是过程产物(记录当时),docs/ 是长期真相(反映当前);需求完成必须走 prompts/finalize-feature.md 沉淀。
+4. **区分过程与长期**:specs/ 是过程产物(requirement/blueprint/open-questions,记录当时),docs/ 是长期真相(反映当前);需求 PR 评审通过、合并前必须走 prompts/finalize-feature.md 沉淀。
 5. **文档分三层**:AGENTS.md(入口层,怎么干活)→ docs/(结构层,是什么/为什么)→ docs/wiki/(定位层,在哪/改哪里);同一信息只落在职责对应的层。
 
 ## 各文档职责与更新时机
@@ -19,7 +19,7 @@
 | docs/architecture.md | 结构与理由 | 模块/依赖/数据流变化时 |
 | docs/api.md | 对外契约 | 契约变化时(附变更记录) |
 | docs/decisions/ | 决策与取舍(ADR) | 做出重大决策时,只增不改 |
-| specs/ | 需求过程 | spec-kit 流程中,完结后归档不再维护 |
+| specs/ | 需求过程 | vibe-clarify/build/verify 流程中,finalize 沉淀后归档不再维护 |
 | docs/.sync-commit | 文档一致性基线(commit id),sync-docs 增量核对的起点 | vibe-init 写入;sync-docs / finalize-feature / vibe-init-docs 收尾时自动更新;合并冲突任取一边后重跑 sync-docs |
 
 ## ADR(架构决策记录)

@@ -18,13 +18,11 @@
 
 | 步骤 | 你做什么 | 产出 |
 |---|---|---|
-| 1. 立 spec | `/speckit.specify <需求描述>`(只讲 what/why,不讲技术) | 分支 + `specs/NNN-xxx/spec.md` |
-| 2. 澄清 | `/speckit.clarify`,认真回答 AI 的问题(不要跳过,这是减少返工最有效的一步) | spec 补全 Clarifications |
-| 3. 定方案 | `/speckit.plan <技术选型与约束>` | plan.md、data-model、contracts |
-| 4. 拆任务 | `/speckit.tasks`(复杂需求可加 `/speckit.analyze` 做一致性检查) | tasks.md |
-| 5. 实现 | `/speckit.implement`(AI 会先查 `docs/wiki/code-map.md` 定位代码) | 代码 + 测试 |
-| 6. 收尾 | 说"需求收尾"(finalize-feature):spec 结论沉淀进 docs/、wiki、ADR;若依赖/契约变了,同步 hub registry | 文档与代码一致 |
-| 7. 提 PR | 按 PR 模板勾检查清单;CI 会检查文档新鲜度 | 评审合入 |
+| 1. 澄清+定方案 | `/vibe-clarify <需求描述>`:起草 requirement.md,认真回答 grill-with-docs 的逐个拷问(一次只问一个、每个带推荐答案,**不要跳过**,这是减少返工最有效的一步),产出 blueprint.md | 分支 + `specs/NNN-xxx/`(spec.md、requirement.md、blueprint.md、open-questions.md) |
+| 2. 实现 | `/vibe-build`:按 blueprint 任务清单垂直切片逐个实现,有单测能力的变更遵循 TDD(红→绿),每任务带验收检查点 | 代码 + 测试 |
+| 3. 核对 | `/vibe-verify`:调 code-review 两轴并行评审(Spec 轴:是否忠实 blueprint;Standards 轴:是否符合规范),偏差记进 spec.md | 核对结论 |
+| 4. 提 PR | 按 PR 模板勾检查清单;CI 会检查文档新鲜度 | 评审合入 |
+| 5. 收尾 | 评审通过、**合并前**说"需求收尾"(finalize-feature):把 requirement/blueprint 结论沉淀进 docs/、wiki、ADR;若依赖/契约变了,同步 hub registry | 文档与代码一致 |
 
 ## 跨应用流程(发起人协调 + 各服务开发者并行)
 
@@ -40,9 +38,9 @@
 
 你需要把关的:影响面是否漏了服务、契约设计是否合理、职责边界是否清晰。
 
-> **第 3 步答不上来是正常的,别硬答。** 它只问"答案不同会改变一个以上服务做法"的问题——这类问题单个服务的 `/speckit.clarify` 结构上问不出来(它只看得到自己那一半)。你不是所有服务的领域负责人,拿不准就让它记进「待定问题」表、注明由谁在什么阶段定。**猜错的答案一旦写进契约,下游会当既定前提照做,比留一个开放问题更难纠正。**
+> **第 3 步答不上来是正常的,别硬答。** 它只问"答案不同会改变一个以上服务做法"的问题——这类问题单个服务的 `/vibe-clarify` 结构上问不出来(它只看得到自己那一半)。你不是所有服务的领域负责人,拿不准就让它记进「待定问题」表、注明由谁在什么阶段定。**猜错的答案一旦写进契约,下游会当既定前提照做,比留一个开放问题更难纠正。**
 >
-> 反过来,只影响一家的细节(按钮放哪、字段叫什么)不该在这里问,会被下放到该服务自己的 clarify。
+> 反过来,只影响一家的细节(按钮放哪、字段叫什么)不该在这里问,会被下放到该服务自己的 `/vibe-clarify`(grill-with-docs 会把下放问题作为强制输入逐个拷问)。
 >
 > 这个阶段也**不必确定要改哪个接口**——registry 是服务级粒度,只回答"谁被牵涉、怎么交互";具体接口留给各服务实施时读代码发现。
 
@@ -54,7 +52,7 @@
 
 ### 阶段三:各服务并行实现(各开发者,在各自仓库)
 
-每个服务的开发者拿到自己那条启动指令,在自己仓库粘贴执行——之后就是标准【单应用流程】的第 2~7 步(启动指令已预填总 spec 链接、职责摘要、契约约束,子 spec 天然带跨应用上下文)。
+每个服务的开发者拿到自己那条启动指令,在自己仓库粘贴执行——之后就是标准【单应用流程】(启动指令已预填总 spec 链接、职责摘要、契约约束、下放问题,vibe-clarify 会把下放问题作为 grill-with-docs 强制输入逐个拷问到结论,子 spec 天然带跨应用上下文)。
 
 各自完成后:回填总 spec 影响面表里自己那行的**分支与状态**。子 spec 在各自仓库的 `specs/` 下,是不入库的过程产物,所以表里记的是"谁、哪条分支、什么状态",不是文件链接。
 
@@ -68,7 +66,7 @@
 |---|---|
 | 需求发起人 | 判断类型;跨应用时立总 spec、组织契约评审、盯上线顺序与关闭 |
 | 服务 owner | 评审涉及自己服务的契约与 registry 变更 |
-| 开发者 | 在自己仓库走 spec-kit 流程 + 收尾;维护本仓库文档 |
+| 开发者 | 在自己仓库走 vibe-clarify/build/verify 流程 + 收尾;维护本仓库文档 |
 
 ## 常见情况
 
@@ -89,10 +87,10 @@
  流程       │
     │     契约评审 ◄── 人工闸口
     │       │ contracts-approved
-    │     各服务粘贴启动指令,并行走单应用流程 2~7
+    │     各服务粘贴启动指令,并行走单应用流程
     │       │
     ▼       ▼
- specify → clarify → plan → tasks → implement → finalize-feature → PR
-                                                  │
-                              按上线顺序发布 → 回填总 spec → done
+ vibe-clarify → vibe-build → vibe-verify → PR → (评审通过) finalize-feature
+                                                              │
+                                  按上线顺序发布 → 回填总 spec → done
 ```

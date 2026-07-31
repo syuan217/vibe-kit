@@ -56,28 +56,28 @@ scripts/
   vibe-release.py            # 发版校验与半自动 bump(check/bump)
   sync-prompts.py            # 从 SKILL.md 生成 prompts/ 同源副本(--write/--check)
 tests/                       # pytest:registry/vibe-paths 脚本 + prompt 同源
-plugin/                      # Claude/zcode/Kimi Code 插件源码(7 个 skills,打包为 vibe-kit.plugin 分发)
+plugin/                      # Claude/zcode/Kimi Code 插件源码(10 个 skills,打包为 vibe-kit.plugin 分发)
 ```
 
 ## 快速开始
 
-1. 安装 spec-kit CLI:
+1. (可选)如需 hub 与 kit 分离:`/path/to/vibe-kit/scripts/init-hub.sh ~/team-hub --git`(三种部署形态见 WORKFLOW.md §1.1)
+
+2. 在某个应用仓库根目录执行:
 
    ```bash
-   uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+   /path/to/vibe-kit/scripts/vibe-init.sh [--hub ~/team-hub]
    ```
 
-2. (可选)如需 hub 与 kit 分离:`/path/to/vibe-kit/scripts/init-hub.sh ~/team-hub --git`(三种部署形态见 WORKFLOW.md §1.1)
-
-3. 在某个应用仓库根目录执行:
+3. 安装工作流引擎依赖(mattpocock skills:grill-with-docs/code-review/tdd,外部依赖,按你用的 AI agent 选 `-a`):
 
    ```bash
-   /path/to/vibe-kit/scripts/vibe-init.sh --integrations claude,cursor,codex [--hub ~/team-hub]
+   npx skills add mattpocock/skills -a claude-code    # 或 codex / cursor / zcode / kimi-code-cli
    ```
 
 4. 按脚本输出提示:填写 `AGENTS.md`、在 hub 的 `registry/services.yaml` 登记该应用、提交入库。
 
-5. 用一个真实需求走流程:`/speckit.specify → clarify → plan → tasks → implement`。
+5. 用一个真实需求走流程:`/vibe-clarify → /vibe-build → /vibe-verify`(评审通过、合并前跑 finalize-feature)。
 
 跨应用需求:先在本仓库 `specs/` 复制 `_template/` 立总 spec,再到各应用仓库走上述流程(见 `specs/README.md`)。
 

@@ -4,7 +4,7 @@
 
 ## 一、这个插件是什么
 
-vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调"的能力封装为 7 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
+vibe-kit 插件把团队 spec-driven 工作流中"文档生成与维护、跨应用协调、需求开发三阶段"的能力封装为 10 个 skills。安装后,AI 会在对应场景**自动触发**相应能力,你不需要记命令、不需要粘贴 prompt。
 
 模板与团队宪法**随插件分发**(位于插件内 `templates/`),安装即可用,无需 clone vibe-kit 仓库。插件同时支持 **Claude Code**、**zcode** 与 **Kimi Code**(三平台 skill 格式兼容,同一份 `plugin/` 分发)。插件与两方协作:
 
@@ -39,11 +39,11 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 
 前置条件:
 
-1. **spec-kit CLI**(bootstrap 时需要):`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`(vibe-init skill 会自动检查并提示)
+1. **mattpocock skills**(工作流引擎,bootstrap 后需要):`npx skills add mattpocock/skills -a <你的 agent>`(claude-code / codex / cursor / zcode / kimi-code-cli;vibe-init 会提示安装)。提供 grill-with-docs(vibe-clarify 用)、code-review(vibe-verify 用)、tdd(vibe-build 可选)。
 2. **hub 目录**(可选,跨应用协调时需要):团队共享的 registry/总 spec 仓库,可用 vibe-kit 仓库的 `init-hub.sh` 创建(三种形态见 WORKFLOW.md §1.1;团队协作必须是共享 git 仓库)。应用仓库根的 `.vibe-hub` 文件记录其位置,AI 据此定位;**定位不到时 AI 会询问你,不会自行 clone 仓库**。暂无 hub 也可先接入,之后补登记
 3. 应用仓库是 git 仓库
 
-## 三、七个 Skill 详解
+## 三、十个 Skill 详解
 
 速查(**在哪执行**决定你要先 `cd` 到哪;**要 hub 吗**决定没配 hub 时能不能用):
 
@@ -53,6 +53,9 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 | vibe-init-docs | 从代码反向生成整套文档 | 应用仓库 | 否 | 一次性 |
 | rebuild-wiki | 生成/重建代码定位 wiki | 应用仓库 | 否 | 首次 + 大重构后 |
 | cross-app-spec | 立跨应用总 spec、定契约 | **hub** | **必须** | 每个跨应用需求 |
+| vibe-clarify | 起草需求、澄清、出 blueprint | 应用仓库 | 否(跨应用时带总 spec) | **每个需求** |
+| vibe-build | 按 blueprint 实现 + 单测 | 应用仓库 | 否 | **每个需求** |
+| vibe-verify | 核对实现 vs blueprint | 应用仓库 | 否 | **每个需求** |
 | finalize-feature | 需求收尾、结论沉淀进 docs/ | 应用仓库 | 否(跨应用需求时要) | **每个需求** |
 | sync-docs | 文档失真时增量补齐 | 应用仓库 | 否 | 按需 |
 | registry-sync | 从代码校准依赖声明 | 应用仓库 | **必须** | 每月 / 大需求后 |
@@ -66,8 +69,8 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 | 用途 | 把一个应用仓库接入 vibe-kit 工作流 |
 | 什么时候用 | 新建仓库后,或存量仓库首次接入 |
 | 你可以说 | "把这个仓库接入 vibe-kit" / "初始化工作流" |
-| 需要提供 | hub 仓库路径(可选,没有则跳过);团队用哪些 AI 工具(默认 claude,cursor,codex) |
-| 做什么 | 对每个 AI 工具跑 spec-kit init;从插件内拷贝 AGENTS.md/docs/wiki/prompts 模板;注入团队宪法;合并 .gitignore(忽略 .specify/、specs/、agent 命令目录等本地生成物);记录 kit 版本 |
+| 需要提供 | hub 仓库路径(可选,没有则跳过) |
+| 做什么 | 从插件内拷贝 AGENTS.md/docs/wiki/prompts 模板;注入团队宪法(docs/constitution.md);合并 .gitignore(忽略 specs/、.vibe-hub 等过程产物与本地配置);记录 kit 版本;提示安装 mattpocock skills 引擎 |
 | 之后 | 存量仓库紧接着跑 vibe-init-docs;去 hub registry 登记本服务;提交 AGENTS.md、docs/、prompts/ |
 
 ### 2. vibe-init-docs — 存量仓库反向生成文档
@@ -97,20 +100,54 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 | 什么时候用 | 跨应用需求的**最开始**,动任何代码之前 |
 | 你可以说 | "这个需求涉及订单和用户两个服务" / "建个跨应用 spec" / "帮我分析影响面" |
 | 需要提供 | hub 路径;需求描述 |
-| 做什么 | 先问你"最核心的是哪个服务"定种子 → 读 registry(v3:services+topics)图遍历推断影响面给你确认 → **就跨端问题澄清**(职责归属、兼容策略、失败/幂等语义、一致性、上线顺序硬约束)→ 建 spec(概述、影响面表、待定问题、契约变更、职责拆分、上线顺序)→ 为每个涉及服务生成拷贝即用的 /speckit.specify 启动指令 |
-| 澄清的边界 | 只问"**答案不同会改变一个以上服务做法**"的问题——这类问题单服务的 `/speckit.clarify` 结构上问不出来。只影响一家的会被下放到该服务自己 clarify。**答不上来就留「待定问题」,别硬答**:猜错的答案写进契约后,下游会当既定前提照做 |
-| 之后 | 契约经相关 owner 评审(人工闸口,不自动跳过;评审前先清掉标了"契约评审前定"的待定项)后,到各应用仓库粘贴启动指令即进入标准 spec-kit 流程 |
+| 做什么 | 先问你"最核心的是哪个服务"定种子 → 读 registry(v3:services+topics)图遍历推断影响面给你确认 → **就跨端问题澄清**(职责归属、兼容策略、失败/幂等语义、一致性、上线顺序硬约束)→ 建 spec(概述、影响面表、待定问题、契约变更、职责拆分、上线顺序)→ 为每个涉及服务生成拷贝即用的 /vibe-clarify 启动指令 |
+| 澄清的边界 | 只问"**答案不同会改变一个以上服务做法**"的问题——这类问题单服务的 `/vibe-clarify` 结构上问不出来。只影响一家的会被下放到该服务自己的 vibe-clarify(grill-with-docs 会把下放问题作为强制输入)。**答不上来就留「待定问题」,别硬答**:猜错的答案写进契约后,下游会当既定前提照做 |
+| 之后 | 契约经相关 owner 评审(人工闸口,不自动跳过;评审前先清掉标了"契约评审前定"的待定项)后,到各应用仓库粘贴启动指令即进入 vibe-clarify → vibe-build → vibe-verify 流程 |
 
-### 5. finalize-feature — 需求收尾沉淀
+### 5. vibe-clarify — 需求澄清与方案
 
 | | |
 |---|---|
-| 用途 | 需求做完后,把 specs/NNN 的结论沉淀进长期文档(spec 是过程产物,docs 才是长期真相) |
-| 什么时候用 | `/speckit.implement` 完成后、**合 PR 前**,每个需求都要做 |
-| 你可以说 | "收尾 specs/003" / "需求做完了,沉淀一下文档" |
-| 做什么 | 对照 spec 与实际 diff,更新 wiki code-map/模块页、architecture、api(含变更记录)、AGENTS.md;重大决策落 ADR;偏离 plan 处在 spec 补「实现偏差」;跨应用需求提醒回填总 spec |
+| 用途 | 把模糊需求变成「人能读的 requirement.md + AI 能执行的 blueprint.md」 |
+| 什么时候用 | 单应用需求开始时;跨应用需求由 cross-app-spec 启动指令带入 |
+| 你可以说 | "起草需求 / 需求澄清" / 直接粘贴 cross-app-spec 启动指令 |
+| 需要提供 | 需求描述(单应用);或启动指令(跨应用,带总 spec 链接 + 下放问题) |
+| 做什么 | 自建 specs/NNN-需求名/ + spec.md 骨架 → 起草 requirement.md → 调 grill-with-docs 逐个澄清(一次一问、每个带推荐答案)→ 产出 blueprint.md(任务清单+检查点)+ open-questions.md |
+| 引擎依赖 | grill-with-docs(mattpocock/skills,未装会提示 `npx skills add`) |
+| 之后 | 进入 vibe-build |
 
-### 6. sync-docs — 日常文档修复
+### 6. vibe-build — 按 blueprint 实现
+
+| | |
+|---|---|
+| 用途 | 按 blueprint.md 任务清单实现代码 + 单测 |
+| 什么时候用 | vibe-clarify 产出 blueprint 之后 |
+| 你可以说 | "实现需求 / 按 blueprint 实现" |
+| 做什么 | 垂直切片逐任务实现;有单测能力的变更遵循 tdd(红→绿,只在 seam 测试);每任务按 blueprint 验收检查点收口;偏离 blueprint 记进 spec.md「实现偏差」 |
+| 引擎依赖 | tdd(mattpocock/skills,可选) |
+| 之后 | 进入 vibe-verify |
+
+### 7. vibe-verify — 实现与方案一致性核对
+
+| | |
+|---|---|
+| 用途 | 提 PR 前核对实现是否忠实 blueprint、代码是否符合规范 |
+| 什么时候用 | vibe-build 完成后、提 PR 前 |
+| 你可以说 | "核对实现 / 检查这次的改动" |
+| 做什么 | 调 code-review 两轴并行评审:Spec 轴(实现 vs blueprint,找缺失/蔓延/错误)、Standards 轴(编码规范 + Fowler 异味);偏差记进 spec.md;通过后提醒「评审通过、合并前跑 finalize-feature」 |
+| 引擎依赖 | code-review(mattpocock/skills,未装会提示) |
+| 之后 | 提 PR;评审通过、合并前跑 finalize-feature |
+
+### 8. finalize-feature — 需求收尾沉淀
+
+| | |
+|---|---|
+| 用途 | 需求做完后,把 specs/NNN 的结论沉淀进长期文档(requirement/blueprint 是过程产物,docs 才是长期真相) |
+| 什么时候用 | `/vibe-verify` 通过、**PR 评审通过后、合并前**,每个需求都要做 |
+| 你可以说 | "收尾 specs/003" / "需求做完了,沉淀一下文档" |
+| 做什么 | 对照 requirement/blueprint 与实际 diff,更新 wiki code-map/模块页、architecture、api(含变更记录)、AGENTS.md;重大决策落 ADR;核对 spec.md「实现偏差」;跨应用需求提醒回填总 spec |
+
+### 9. sync-docs — 日常文档修复
 
 | | |
 |---|---|
@@ -119,7 +156,7 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 | 你可以说 | "同步一下文档" / "文档好像过期了" / "补文档" |
 | 做什么 | 找到上次文档更新点,扫描其后的代码变更,逐项修正 AGENTS.md/wiki/architecture/api;只改文档不改代码 |
 
-### 7. registry-sync — 校准服务依赖关系
+### 10. registry-sync — 校准服务依赖关系
 
 | | |
 |---|---|
@@ -135,7 +172,7 @@ hub 仓库(团队协调,可选)      应用仓库(你的服务)
 
 **接入一个存量服务**:打开仓库 → "接入 vibe-kit"(vibe-init)→ "反向生成文档"(vibe-init-docs,含 wiki)→ 按提示去 hub 登记 registry → 提交。
 
-**做一个单应用需求**:`/speckit.specify` → `clarify` → `plan` → `tasks` → `implement`(AI 动手前会自动查 wiki code-map 定位代码)→ "收尾一下"(finalize-feature)→ 提 PR。
+**做一个单应用需求**:`/vibe-clarify`(AI 会调 grill-with-docs 逐个澄清,动手前查 wiki code-map 定位代码)→ `/vibe-build`(垂直切片实现+单测)→ `/vibe-verify`(code-review 两轴核对)→ 提 PR → 评审通过后 "收尾一下"(finalize-feature,合并前)。
 
 **做一个跨应用需求**:"这个需求涉及 A 和 B 服务"(cross-app-spec 在 hub 立总 spec、定契约)→ owner 评审契约 → 各仓库走单应用流程 → 各自 finalize-feature → 按总 spec 顺序上线 → 回填总 spec 状态。
 
@@ -179,9 +216,9 @@ python3 scripts/registry-check.py && python3 scripts/registry-graph.py
 
 安装本插件后,agent 应遵守:
 
-1. **自动触发,不等用户点名**:用户说出各 skill 描述中的触发语义时直接调用对应 skill;`/speckit.implement` 完成时主动建议 finalize-feature;发现文档与代码不一致时主动建议 sync-docs。
+1. **自动触发,不等用户点名**:用户说出各 skill 描述中的触发语义时直接调用对应 skill;`/vibe-verify` 通过时主动提醒"评审通过、合并前跑 finalize-feature";发现文档与代码不一致时主动建议 sync-docs。
 2. **定位代码先查表**:在已接入 vibe-kit 的仓库改代码前,先读 `docs/wiki/code-map.md` 与相关模块页;查不到再全库搜索,并在任务结束时把新发现补进 code-map。**跨仓库定位**(需要读对端服务代码)时,先在 hub 跑 `python3 scripts/vibe-paths.py resolve <service-id>` 取本地 clone 路径;未映射则询问用户去 `add`,**禁止为定位代码而 clone 任何仓库**;拿到本地路径后仍按本条规则读该仓库的 `docs/wiki/code-map.md` 再定位具体文件(机制见 `docs/local-paths.md`)。
-3. **skill 链**:vibe-init(存量仓库)→ 建议 vibe-init-docs;vibe-init-docs → 内部调用 rebuild-wiki;cross-app-spec 完成 → 引导用户到各应用仓库走 spec-kit 流程;任何 skill 发现契约/依赖变化 → 提醒更新 hub registry 并重跑 `scripts/registry-graph.py`。
+3. **skill 链**:vibe-init(存量仓库)→ 建议 vibe-init-docs;vibe-init-docs → 内部调用 rebuild-wiki;cross-app-spec 完成 → 引导用户到各应用仓库走 vibe-clarify → vibe-build → vibe-verify 流程;vibe-verify 通过 → 提醒评审后跑 finalize-feature;任何 skill 发现契约/依赖变化 → 提醒更新 hub registry 并重跑 `scripts/registry-graph.py`。
 4. **hub 定位**:按优先级——应用仓库根 `.vibe-hub` 文件 → `$VIBE_HUB` 环境变量 → 对话上下文 → 问用户;不要猜。
 5. **registry 是服务级粒度**:写入 registry 的关系只到"哪个服务、什么方式",**不得记接口名/方法名**;同一对端的多个接口合并为一条 `depends_on`。要表达"这个服务负责什么"用 `boundary`,不要靠罗列接口。
 6. **事实边界**:文档中的路径、符号、接口必须在代码中真实存在,生成后用搜索工具核对;不确定标 `TODO(待确认)`,禁止臆造;行号永远不写入文档。
@@ -208,7 +245,7 @@ python3 scripts/registry-check.py && python3 scripts/registry-graph.py
 | `<service>: 缺少必填字段 boundary` | v3 起 `boundary` 必填,补上"负责……/不负责……(归 <service-id>)"两句 |
 | `contract 缺少 <service-id>: 前缀` / `contract 前缀是 X,应为 Y` | contract 是跨仓库指针,格式 `<对端 service-id>:<对端仓库内路径>`;契约由提供方维护,所以前缀是对端(topic 则是 owner) |
 | `依赖图已过期` | `services.yaml` 改了但没重生成:`python3 scripts/registry-graph.py`(合入 main 后 CI 也会自动做) |
-| `未检测到 specify CLI` | `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`;没有 uv 先 `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| `vibe-clarify/vibe-verify 提示引擎未装` | `npx skills add mattpocock/skills -a <你的 agent>`(claude-code/codex/cursor/zcode/kimi-code-cli);提供 grill-with-docs、code-review、tdd |
 | CI 报 `prompt 副本与 skill 不同源` | 有人手改了 `prompts/` 下的副本。副本是生成物——改 `plugin/skills/<name>/SKILL.md`,再跑 `python3 scripts/sync-prompts.py --write` |
 | doc-freshness 警告"源码变了但文档没动" | 说"需求收尾"(finalize-feature)或"同步文档"(sync-docs)。注意它只认 `docs/` 与 `AGENTS.md`——**写了 spec 不算数** |
 

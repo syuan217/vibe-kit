@@ -65,7 +65,10 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 PLUGIN_README = ROOT / "plugin" / "README.md"
 USAGE = ROOT / "plugin" / "USAGE.md"
 README = ROOT / "README.md"
+AGENTS_MD = ROOT / "AGENTS.md"
 SKILLS_DIR = ROOT / "plugin" / "skills"
+# 会出现「N 个 skills」的文档(bump 时自动修数字)
+SKILL_COUNT_DOCS = (README, PLUGIN_README, USAGE, AGENTS_MD)
 
 # 语义化版本正则
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -105,6 +108,19 @@ def parse_marketplace_skill_description(desc: str) -> tuple[int | None, list[str
     cleaned = re.sub(r"\([^)]*\)", "", roster_part)
     names = [t.strip().strip("`").strip() for t in cleaned.split(",") if t.strip()]
     return count, names
+
+
+def parse_agents_md_roster(text: str) -> list[str] | None:
+    """从 AGENTS.md「代码组织」里解析「N 个 skills:a、b、c;……」的名册。
+
+    解析不到返回 None(该行不存在时不报错,只有写了才校验)。
+    """
+    m = re.search(r"\d+\s*个\s*skills\s*[:：]\s*(.+?)[;；]", text)
+    if not m:
+        return None
+    # 去掉括注(全角/半角)后按顿号/逗号切
+    cleaned = re.sub(r"[(（][^)）]*[)）]", "", m.group(1))
+    return [t.strip().strip("`").strip() for t in re.split(r"[、,，]", cleaned) if t.strip()]
 
 
 # ----------------------------- check 模式 -----------------------------
@@ -197,8 +213,9 @@ def cmd_check() -> int:
             detail.append(f"多 {sorted(extra)}")
         errors.append(f"marketplace.json description 的 skill 名册与实际不符({'; '.join(detail)})")
 
-    # README / USAGE / plugin/README 里的「N 个 skills」「N skills」
-    for path in (README, PLUGIN_README, USAGE):
+    # README / USAGE / plugin/README / AGENTS.md 里的「N 个 skills」「N skills」
+    # 数字只报 warning:bump 的 fix_skill_count_in_docs 会自动修
+    for path in SKILL_COUNT_DOCS:
         if not path.is_file():
             continue
         text = path.read_text(encoding="utf-8")
@@ -210,6 +227,20 @@ def cmd_check() -> int:
                     warnings.append(
                         f"{rel}: 出现「{m.group(0)}」但实际 {len(actual)} 个 skill"
                     )
+
+    # AGENTS.md 的 skill 名册。数字能自动修,名册不能 —— 报 error 才不会被无视。
+    # 名单错比数字错有害:AI 读 AGENTS.md 会以为某个 skill 不存在。
+    if AGENTS_MD.is_file():
+        agents_names = parse_agents_md_roster(AGENTS_MD.read_text(encoding="utf-8"))
+        if agents_names is not None and set(agents_names) != actual_set:
+            missing = actual_set - set(agents_names)
+            extra = set(agents_names) - actual_set
+            detail = []
+            if missing:
+                detail.append(f"缺 {sorted(missing)}")
+            if extra:
+                detail.append(f"多 {sorted(extra)}")
+            errors.append(f"AGENTS.md 的 skill 名册与实际不符({'; '.join(detail)})")
 
     # 3. CHANGELOG 完整性
     if not CHANGELOG.is_file():
@@ -349,9 +380,13 @@ def rewrite_marketplace_skill_description(actual: list[str]) -> bool:
 
 
 def fix_skill_count_in_docs(actual_n: int) -> list[str]:
-    """修正 README / plugin/README / USAGE 里「N 个 skills」「N skills」的数字。返回改动文件列表。"""
+    """修正 README / plugin/README / USAGE / AGENTS.md 里「N 个 skills」「N skills」的数字。
+
+    只改数字;名册不自动改(顺序与括注是人工编排的),由 check 的 error 提醒人工补。
+    返回改动文件列表。
+    """
     changed: list[str] = []
-    for path in (README, PLUGIN_README, USAGE):
+    for path in SKILL_COUNT_DOCS:
         if not path.is_file():
             continue
         text = path.read_text(encoding="utf-8")

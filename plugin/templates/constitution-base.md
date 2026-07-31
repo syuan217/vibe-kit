@@ -1,6 +1,6 @@
 <!--
-团队工程宪法基线 — 由 vibe-kit 维护,bootstrap 时写入应用仓库 .specify/memory/constitution.md
-应用可用 /speckit.constitution 在此基础上追加应用级原则;基线条款不得删改。
+团队工程宪法基线 — 由 vibe-kit 维护,bootstrap 时写入应用仓库 docs/constitution.md
+应用级补充原则直接编辑该文件(末尾应用级补充区);基线条款不得删改。
 -->
 
 # 工程宪法
@@ -14,8 +14,8 @@
 
 ## 二、规格先行
 
-5. 非琐碎变更先有 spec(spec-kit 流程);跨应用需求先在 hub 仓库立总 spec,契约定稿后再实现。
-6. spec 关注 what 与 why,plan 才引入技术选型;/speckit.clarify 默认不跳过。
+5. 非琐碎变更先走 `/vibe-clarify`(产出 requirement.md + blueprint.md);跨应用需求先在 hub 仓库立总 spec,契约定稿后再实现。
+6. requirement 关注 what 与 why,blueprint 才引入技术选型;`/vibe-clarify` 的 grill-with-docs 澄清默认不跳过。
 
 ## 三、质量
 
@@ -28,4 +28,4 @@
 - 应用级补充原则不得与基线冲突;冲突时以基线为准。
 
 ---
-<!-- 以下为应用级补充,由 /speckit.constitution 维护 -->
+<!-- 以下为应用级补充,直接编辑本文件维护 -->

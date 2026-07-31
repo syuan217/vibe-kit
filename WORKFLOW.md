@@ -6,9 +6,9 @@
 ## 0. TL;DR
 
 - **vibe-kit 本仓库是 hub(中心仓库)**:存放服务注册表、跨应用 spec、公共文档、团队宪法基线、应用仓库模板。
-- **每个应用仓库通过 `scripts/vibe-init.sh` 初始化**:获得 spec-kit 工作流 + 统一的 `AGENTS.md` 文档结构。
+- **每个应用仓库通过 `scripts/vibe-init.sh` 初始化**:获得 vibe-clarify/build/verify 三阶段工作流 + 统一的 `AGENTS.md` 文档结构。
 - **AGENTS.md 是所有 AI 工具的统一上下文入口**(跨工具开放标准,30+ 工具原生支持),一份文件服务所有工具。
-- **跨应用需求先在 hub 立总 spec,拆分后各仓库走 spec-kit 流程**,契约先于实现。
+- **跨应用需求先在 hub 立总 spec,拆分后各仓库走 vibe-clarify 流程**,契约先于实现。
 - **文档失职有三道防线**:宪法约束(流程内建)→ PR/CI 卡点 → `prompts/sync-docs.md` 一键补齐。
 
 ## 1. 总体架构
@@ -28,7 +28,7 @@
         │ AGENTS.md   │    │ AGENTS.md   │    │ AGENTS.md   │
         │ docs/       │    │ docs/       │    │ docs/       │
         │ specs/      │    │ specs/      │    │ specs/      │
-        │ .specify/   │    │ .specify/   │    │ .specify/   │
+        │ prompts/    │    │ prompts/    │    │ prompts/    │
         └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
@@ -57,7 +57,23 @@ hub(registry + 跨应用 specs + 公共 docs)与 kit(模板/脚本/插件)职责
 - `AGENTS.md` 是跨工具开放标准(Linux 基金会 Agentic AI Foundation 托管),Cursor、Codex、Copilot、Windsurf 等 30+ 工具原生读取,Claude Code 现在也直接读取。**只维护这一份**,模板中保留一行式 `CLAUDE.md`(`@AGENTS.md`)仅为兼容旧版 Claude Code。
 - AGENTS.md 保持精简(≤150 行):概览、技术栈、命令、约定、文档地图。深度内容放 `docs/`,AI 按需读取——这比一个巨型文件对所有工具都更有效。
 - 文档分三层:**AGENTS.md**(入口层)→ **docs/**(结构层:architecture/api/decisions)→ **docs/wiki/**(定位层:code-map 功能→代码定位表 + 模块页含"常见修改场景")。定位层让 AI 改代码前查表即达,免去每次全库搜索;首次用 `prompts/rebuild-wiki.md` 从代码生成,之后随需求收尾增量维护。
-- spec-kit 初始化时对每个团队用到的 agent 各执行一次 `specify init . --force --integration <agent>`。`.specify/`(模板、脚本、constitution)与各 agent 命令目录(`.claude/commands/`、`.cursor/` 等)是**本地生成物**,已被 .gitignore 忽略,克隆仓库后重跑 vibe-init 即重建;`specs/`(需求 spec)同为**过程产物,不入库**——长期真相在 docs/,由 finalize-feature 沉淀。
+- vibe-init 拷贝应用模板(AGENTS.md、docs/、prompts/、`specs/_template/`)并注入团队宪法基线(`docs/constitution.md`)。`specs/`(需求过程产物:requirement/blueprint/open-questions)不入库——长期真相在 docs/,由 finalize-feature 沉淀;**唯一例外是 `specs/_template/`**,它是 vibe-clarify 建目录要套用的骨架,属工具而非过程产物,入库让队友克隆即可用(gitignore 写法必须是 `specs/*` + `!specs/_template/`,写成 `specs/` 会让负规则失效)。各 AI 工具的私有目录(`.claude/`、`.cursor/` 等)由工具自身管理,已 gitignore。
+
+### 1.2 引擎层依赖(mattpocock skills)
+
+vibe-clarify/build/verify 三个流程 skill 调用外部引擎(mattpocock/skills,英文 skill),它们**不随 vibe-kit 插件分发**,在各应用仓库用 vercel-labs/skills 生态的 CLI 安装(工具中立,支持 claude-code/codex/cursor/zcode/kimi-code-cli 等 80+ agent):
+
+```
+npx skills add mattpocock/skills -a <你的 agent>
+```
+
+| 引擎 skill | 用在 | 作用 |
+|---|---|---|
+| grill-with-docs(+ grilling) | vibe-clarify | 逐个澄清:一次一问、每个带推荐答案、能查到的事实去查、遍历决策树 |
+| code-review | vibe-verify | 两轴并行评审(Spec 轴核对实现 vs blueprint,Standards 轴核对编码规范) |
+| tdd | vibe-build | 单测方法指引(红→绿、垂直切片、只在 seam 测试),可选 |
+
+vibe-init 会在初始化时提示安装(不自动跑,避免 npx 网络问题阻断)。**不安装这些引擎,vibe-clarify/vibe-verify 调用时会再次提示**——流程不会静默降级回"一次甩一堆问题"的旧毛病。
 
 ### 2.2 痛点二:多应用关联需求
 
@@ -67,28 +83,28 @@ hub(registry + 跨应用 specs + 公共 docs)与 kit(模板/脚本/插件)职责
 - registry 用两类关系描述系统:点对点调用(REST/RPC/跨库)走 `depends_on`(`via` 记具体方式)、MQ 发布订阅走 `topics`(producers/consumers);服务另有 `boundary` 字段声明职责边界。跨应用需求分析由此从"查一层依赖"升级为图遍历,输出"涉及哪些服务 + 各自边界 + 如何交互"。
 - **粒度是服务级,不是接口级**:registry 只回答"哪些服务被牵涉、用什么方式",不记具体接口——澄清阶段需要的是前者,接口在实施阶段读代码即可发现,记进 registry 只会带来数倍维护量和必然漂移。因此"这个需求哪些事归 A、哪些归 B"的答案不在关系表里,而在 `boundary`(尤其"**不负责**"那半句)。
 - **registry 维护机制**(详见 `registry/README.md`):关系单一来源——点对点写 `depends_on`、MQ 写 `topics`,服务条目不镜像收发关系;三个声明式更新时机(vibe-init 接入登记、finalize-feature 依赖变化时更新、cross-app-spec 立项时校对)+ CI 自动校验(`scripts/registry-check.py`:引用完整性、字段合法性,合入后自动重生成依赖图)+ 定期用 `registry-sync` 从代码反推真实依赖校准声明。
-- 跨应用需求流程:先在 hub `specs/NNN-需求名/spec.md` 立**总 spec**(需求概述、影响面、契约变更、各服务职责拆分、上线顺序),再到各应用仓库 `/speckit.specify` 建**子 spec** 并回链总 spec。子 spec 是各仓库的过程产物(`specs/` 不入库),总 spec 的"影响面"表因此记**负责人 / 分支 / 状态**而非文件路径。
+- 跨应用需求流程:先在 hub `specs/NNN-需求名/spec.md` 立**总 spec**(需求概述、影响面、契约变更、各服务职责拆分、上线顺序),再到各应用仓库 `/vibe-clarify` 建**子 spec** 并回链总 spec。子 spec 是各仓库的过程产物(`specs/` 不入库),总 spec 的"影响面"表因此记**负责人 / 分支 / 状态**而非文件路径。
 - **契约先于实现**:跨服务接口(API/消息/事件)在总 spec 的契约章节先定稿,提供方与消费方并行开发;上线顺序在总 spec 中明确(通常先发提供方)。
 
 ### 2.3 痛点三:文档未及时维护 / 文档在本地
 
 **机制:三道防线,前两道防止、第三道兜底修复。**
 
-1. **流程内建**(宪法约束):`plugin/templates/constitution-base.md` 规定"任务完成定义包含文档更新"、"文档唯一权威来源是 git 仓库"。spec-kit 各阶段都读 constitution,AI 在 implement 阶段会自动把文档更新纳入任务。
-2. **PR/CI 卡点**:PR 模板含文档 checklist;CI(`doc-freshness.yml`)检测"源码变了但 docs/、AGENTS.md 都没动"并发出警告(试用期用 warning,推广稳定后可改为 fail)。判定只认 docs/ 与 AGENTS.md——**写了 spec 不算数,把结论沉淀进长期文档才算数**。
+1. **流程内建**(宪法约束):`docs/constitution.md` 规定"任务完成定义包含文档更新"、"文档唯一权威来源是 git 仓库"。vibe-clarify/build/verify 各阶段都遵循 constitution,AI 在 build 阶段会自动把文档更新纳入任务。
+2. **PR/CI 卡点**:PR 模板含文档 checklist;CI(`doc-freshness.yml`)检测"源码变了但 docs/、AGENTS.md 都没动"并发出警告(试用期用 warning,推广稳定后可改为 fail)。判定只认 docs/ 与 AGENTS.md——**写了 requirement/blueprint 不算数,把结论沉淀进长期文档才算数**。
 3. **兜底修复**:`prompts/sync-docs.md`——任何人用任何 AI 工具说"按 prompts/sync-docs.md 执行",即可扫描上次文档更新以来的代码变更,反推补齐文档。即使有人漏了,下一个人一条命令修复,文档债不会滚雪球。对完全没有文档的存量仓库,用 `prompts/vibe-init-docs.md` 从代码反向生成整套文档。
 
-文档生成覆盖完整生命周期,四个 prompt/规范各管一段:`vibe-init-docs`(存量仓库初始生成)→ `finalize-feature`(每个需求完成后把 spec 结论沉淀进 docs/,spec 是过程产物、docs 才是长期真相)→ `sync-docs`(日常失真修复);`docs/doc-style.md` 是统一写作规范,保证不同人、不同 AI 工具生成的文档质量一致。
+文档生成覆盖完整生命周期,四个 prompt/规范各管一段:`vibe-init-docs`(存量仓库初始生成)→ `finalize-feature`(每个需求 PR 评审通过、合并前把 requirement/blueprint 结论沉淀进 docs/,它们是过程产物、docs 才是长期真相)→ `sync-docs`(日常失真修复);`docs/doc-style.md` 是统一写作规范,保证不同人、不同 AI 工具生成的文档质量一致。
 
 因为文档全部在 git 里随 PR 走,"文档在某人本地"这一情况从结构上被消除。
 
 ### 2.4 痛点四:团队工作流统一
 
-**机制:spec-kit 标准流程 + 分层 constitution。**
+**机制:vibe-clarify/build/verify 三阶段 + 分层 constitution。**
 
-- 统一流程:`/speckit.specify → /speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.implement`(clarify 强烈建议不跳过,可显著减少返工;需要时加 `/speckit.analyze` 做一致性检查)。
-- constitution 分层:**团队基线**(hub 维护,bootstrap 时注入,条款不得删改)+ **应用级补充**(各仓库 `/speckit.constitution` 追加)。团队规范改一处,新应用自动继承。
-- 后续团队定制(统一 spec 模板措辞、强制安全评审门禁等)可打包为 spec-kit **preset** 分发,应用仓库 `specify preset add` 即可套用——这是官方支持的组织级定制机制。
+- 统一流程:`/vibe-clarify` → `/vibe-build` → `/vibe-verify` → (PR 评审通过) `finalize-feature`。三阶段对应「澄清定方案 / 实现单测 / 核对一致性」,其中 clarify 的 grill-with-docs **一次一问、强烈建议不跳过**(可显著减少返工),verify 的两轴评审补上了实现与方案一致性的校验。
+- constitution 分层:**团队基线**(hub 维护,bootstrap 时注入 `docs/constitution.md`,条款不得删改)+ **应用级补充**(各仓库直接编辑该文件追加)。团队规范改一处,新应用自动继承。
+- 引擎层(grill-with-docs/code-review/tdd)由 mattpocock/skills 提供,各应用仓库 `npx skills add mattpocock/skills` 安装、保持上游同步(详见 §1.2)。
 
 ## 3. 端到端开发流程
 
@@ -96,10 +112,10 @@ hub(registry + 跨应用 specs + 公共 docs)与 kit(模板/脚本/插件)职责
 
 **单应用需求:**
 
-1. 在应用仓库:`/speckit.specify <需求描述>`(自动建分支与 `specs/NNN-xxx/spec.md`)
-2. `/speckit.clarify` 澄清 → `/speckit.plan <技术选型>` → `/speckit.tasks` → `/speckit.implement`
-3. 合 PR 前按 `prompts/finalize-feature.md` 收尾:把本次 spec 的结论(架构/契约/决策变化)沉淀进 docs/,重大决策落 ADR
-4. 提 PR → CI doc-freshness 检查 → 评审合入
+1. 在应用仓库:`/vibe-clarify <需求描述>`(自建分支与 `specs/NNN-xxx/`,起草 requirement.md、用 grill-with-docs 逐个澄清、产出 blueprint.md + open-questions.md)
+2. `/vibe-build` 按 blueprint 垂直切片实现 + 单测 → `/vibe-verify` 调 code-review 两轴核对实现 vs blueprint
+3. 提 PR → CI doc-freshness 检查 → 评审通过
+4. **合并前**按 `prompts/finalize-feature.md` 收尾:把本次 requirement/blueprint 的结论(架构/契约/决策变化)沉淀进 docs/,重大决策落 ADR
 
 **跨应用需求:**
 
@@ -123,12 +139,15 @@ docs/architecture.md         # 架构与模块
 docs/api.md                  # 对外契约
 docs/decisions/              # 架构决策记录(ADR)
 docs/wiki/                   # 代码定位层:code-map.md + modules/ 模块页
+prompts/vibe-clarify.md      # 阶段1:起草需求 + 澄清 + 出 blueprint
+prompts/vibe-build.md        # 阶段2:按 blueprint 实现
+prompts/vibe-verify.md       # 阶段3:核对实现 vs blueprint
 prompts/rebuild-wiki.md      # 从代码生成/重建 wiki
-prompts/finalize-feature.md  # 需求完成后沉淀文档(含 wiki 增量)
+prompts/finalize-feature.md  # PR 评审通过、合并前沉淀文档(含 wiki 增量)
 prompts/sync-docs.md         # 文档补齐流程
-.specify/                    # spec-kit 核心(模板/脚本/constitution;本地生成,不入库)
-.claude/ .cursor/ .codex/    # 各 agent 命令目录(本地生成,不入库;重跑 vibe-init 重建)
-specs/                       # 本应用需求 spec(spec-kit 过程产物,本地生成,不入库)
+docs/constitution.md         # 团队工程宪法(基线 + 应用补充)
+specs/                       # 本应用需求过程产物(requirement/blueprint/open-questions;不入库)
+specs/_template/             # 单应用需求文档骨架(vibe-clarify 套用;入库,specs/ 不入库的唯一例外)
 .github/PULL_REQUEST_TEMPLATE.md
 .github/workflows/doc-freshness.yml
 ```
@@ -138,7 +157,7 @@ specs/                       # 本应用需求 spec(spec-kit 过程产物,本地
 1. **本周(个人)**:挑一个你自己的应用仓库跑 `vibe-init.sh`,用一个真实小需求走完整流程;在 registry 登记 2-3 个真实服务。
 2. **验证跨应用**:挑一个涉及 2 个服务的真实需求,在 hub 走一次总 spec → 子 spec 流程,检验模板是否顺手,随手修模板。
 3. **推广前**:把 hub 推到团队 git;写一页 onboarding(可直接用 README);找 1-2 个同事(最好用不同 AI 工具)试点一个迭代。
-4. **推广后**:CI 检查由 warning 改为 fail;考虑把团队定制打包为 spec-kit preset;registry 增加 CI 校验(yaml 合法性、依赖引用存在性)。
+4. **推广后**:CI 检查由 warning 改为 fail;registry 增加 CI 校验(yaml 合法性、依赖引用存在性)。
 
 ## 6. 补充建议(超出你提出的四点)
 
@@ -149,6 +168,6 @@ specs/                       # 本应用需求 spec(spec-kit 过程产物,本地
 
 ## 附:方案依据
 
-- spec-kit 官方(v0.10,`/speckit.*` 命令、多 agent init、extensions/presets):https://github.com/github/spec-kit
+- mattpocock/skills(grill-with-docs / code-review / tdd 等引擎 skill):https://github.com/mattpocock/skills
+- vercel-labs/skills(开放 skill 生态 CLI,工具中立安装):https://github.com/vercel-labs/skills
 - AGENTS.md 标准与各工具支持现状:https://benjamincrozat.com/agents-md 、https://www.morphllm.com/agents-md-guide
-- spec-kit 工作流实践:https://developer.microsoft.com/blog/spec-driven-development-spec-kit/
