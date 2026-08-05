@@ -69,6 +69,24 @@ def test_skill_frontmatter_name_must_match_dir(make_kit):
     assert "与目录名不一致" in r.stdout
 
 
+def test_skill_frontmatter_invalid_yaml_detected(make_kit):
+    """description 含未加引号的 ": " 会让严格 YAML 解析器静默丢掉 skill,必须拦下。
+
+    回归 finalize-feature 加载缺失 bug:值体里的 "(specs/NNN-xxx: requirement.md, ...)"
+    和 "(actual best timing: PR ...)" 触发 "mapping values are not allowed here"。
+    """
+    kit = make_kit(skills={"vibe-init": "vibe-init"})
+    (kit / "plugin" / "skills" / "vibe-init" / "SKILL.md").write_text(
+        '---\nname: vibe-init\n'
+        'description: Foo (specs/NNN: bar.md) triggers mapping values\n'
+        '---\n\n# vibe-init\n',
+        encoding="utf-8",
+    )
+    r = run_release(str(kit), "check")
+    assert r.returncode == 1
+    assert "不是合法 YAML" in r.stdout
+
+
 def test_skill_roster_drift_detected(make_kit):
     """marketplace description 的名册漏了一个 skill 时应报错。"""
     kit = make_kit(skills={"vibe-init": "vibe-init", "sync-docs": "sync-docs"})

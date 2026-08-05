@@ -1,6 +1,6 @@
 ---
 name: finalize-feature
-description: Finalizes a completed feature by distilling vibe-clarify/build artifacts (specs/NNN-xxx: requirement.md, blueprint.md, open-questions.md) into long-lived docs - wiki code-map, architecture, API contract, and ADRs - after PR review passes and before the merge. Use when the user says "需求收尾", "收尾 specs/NNN", "finalize feature", "沉淀文档", or right after /vibe-verify passes (actual best timing: PR reviewed & approved, before merge).
+description: 'Finalizes a completed feature by distilling vibe-clarify/build artifacts (specs/NNN-xxx: requirement.md, blueprint.md, open-questions.md) into long-lived docs - wiki code-map, architecture, API contract, and ADRs - after PR review passes and before the merge. Use when the user says "需求收尾", "收尾 specs/NNN", "finalize feature", "沉淀文档", or right after /vibe-verify passes (actual best timing: PR reviewed & approved, before merge).'
 ---
 
 # finalize-feature — 需求完成后的文档收尾

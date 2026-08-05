@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-05
+
+补丁版,修复 finalize-feature skill 在严格 YAML 解析器下加载缺失的问题,并加固 frontmatter 校验。无工作流逻辑变更。
+
+### Fixed
+
+- **finalize-feature skill 加载缺失**:`plugin/skills/finalize-feature/SKILL.md` 的 `description` 是未加引号的 plain scalar,值体里含两处 `: `(`specs/NNN-xxx: requirement.md`、`actual best timing: PR reviewed & approved`)。严格 YAML 解析器(如 Kimi Code)把第二处冒号当作新的 mapping key,抛 `mapping values are not allowed here`,整行被丢 → 该 skill 在这些工具里加载后缺席(v1.2.0 声明 10 个,实际只见 9 个)。宽松解析器(如 zcode)能整行当字符串吃下去,所以并非所有工具都复现,掩盖了问题。修复:给 `description` 加单引号包裹,值体原样保留。
+- **frontmatter 校验加固**:`scripts/vibe-release.py check` 此前用正则 `^(name|description):\s*(.+)$` 提取 frontmatter 字段,对非法 YAML 照样匹配成功,无法兜住本次 bug。改为 `yaml.safe_load` 真解析:解析失败时报「SKILL.md frontmatter 不是合法 YAML」并指明行号。`tests/test_vibe_release.py` 补回归测试 `test_skill_frontmatter_invalid_yaml_detected`。
+
 ## [1.2.0] - 2026-07-31
 
 移除 spec-kit,自建 3 阶段需求工作流。设计与逐文件核对基准见 `docs/v1.2.0-plan-spec-kit-removal.md`。

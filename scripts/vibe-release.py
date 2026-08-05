@@ -19,6 +19,8 @@ import subprocess
 import sys
 from datetime import date
 
+import yaml
+
 
 SUBCOMMANDS = ("check", "bump")
 
@@ -285,11 +287,19 @@ def cmd_check() -> int:
         if not fm:
             errors.append(f"{d.name}: SKILL.md 缺少 YAML frontmatter")
             continue
-        fields = dict(re.findall(r"^(name|description):\s*(.+)$", fm.group(1), re.MULTILINE))
+        try:
+            fields = yaml.safe_load(fm.group(1)) or {}
+        except yaml.YAMLError as e:
+            # 用真 YAML 解析而不是正则提字段:含 ": " 的未加引号 description 会让严格解析器
+            # 报 "mapping values are not allowed here",整行被丢 → skill 加载后缺席。
+            mark = getattr(e, "problem_mark", None)
+            loc = f" 第 {mark.line + 1} 行" if mark else ""
+            errors.append(f"{d.name}: SKILL.md frontmatter 不是合法 YAML{loc}({e.problem})")
+            continue
         for key in ("name", "description"):
-            if not fields.get(key, "").strip():
+            if not str(fields.get(key, "")).strip():
                 errors.append(f"{d.name}: SKILL.md frontmatter 缺 {key}")
-        if (fm_name := fields.get("name", "").strip()) and fm_name != d.name:
+        if (fm_name := str(fields.get("name", "")).strip()) and fm_name != d.name:
             errors.append(f"{d.name}: frontmatter name 为 {fm_name!r},与目录名不一致")
         # SKILL.md 正文是渠道中立的(只写执行时路径),引用不到插件内的随附文件 —— 有就是死文件
         if extra := sorted(p.name for p in d.iterdir() if p.name != "SKILL.md"):
